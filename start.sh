@@ -1,0 +1,1 @@
+ nohup bin/service conf/conf.toml > service.log 2>&1 &

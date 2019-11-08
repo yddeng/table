@@ -1,0 +1,5 @@
+# 配置模版，正式去掉后缀template
+
+HttpAddr       = "10.128.2.252:6060"      # 服务器地址
+LoadDir        = "./app/web"              # 加载目录
+
