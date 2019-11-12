@@ -9,9 +9,15 @@
 	<script src="./message.js"></script>
 	<script src="./handsontable.js"></script>
 	<link rel="stylesheet" media="screen" href="./css/handsontable.full.css">
+	<style>
+		.curRow{
+			color: red;
+			background: #b1b100;
+		}
+	</style>
 </head>
 <body>
-<div id="table" style="width: 100px;height: 500px"></div>
+<div id="table"></div>
 <script>
 
 	console.log(getUrlParam("userName"));
