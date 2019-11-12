@@ -104,7 +104,44 @@ func handleCellSelected(req map[string]interface{}, session *Session) {
 	file.PushData()
 }
 
+func handleInsertRow(req map[string]interface{}, session *Session) {
+	rowIndex := req["rowIndex"].(int)
+	file := session.File
+
+	file.xlFile.InsertRow(file.activeSheet, rowIndex)
+	session.addEvent(req)
+}
+
+func handleRemveRow(req map[string]interface{}, session *Session) {
+	rowIndex := req["rowIndex"].(int)
+	file := session.File
+
+	file.xlFile.RemoveRow(file.activeSheet, rowIndex)
+	session.addEvent(req)
+}
+
+func handleInsertCol(req map[string]interface{}, session *Session) {
+	colIndex := req["colIndex"].(int)
+	file := session.File
+
+	//celHeader := excelize.
+	file.xlFile.InsertCol(file.activeSheet, colIndex)
+	session.addEvent(req)
+}
+
+func handleRemoveCol(req map[string]interface{}, session *Session) {
+	rowIndex := req["rowIndex"].(int)
+	file := session.File
+
+	file.xlFile.RemoveCol(file.activeSheet, rowIndex)
+	session.addEvent(req)
+}
+
 func init() {
 	dispatcher["setCellValues"] = handleSetCellValues
 	dispatcher["cellSelected"] = handleCellSelected
+	dispatcher["insertRow"] = handleInsertRow
+	dispatcher["removeRow"] = handleRemveRow
+	dispatcher["insertCol"] = handleInsertCol
+	dispatcher["removeCol"] = handleRemoveCol
 }

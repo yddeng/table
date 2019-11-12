@@ -60,8 +60,11 @@ func (this *Session) addEvent(event map[string]interface{}) {
 }
 
 func (this *Session) SaveEvent() {
-	events, err := json.Marshal(this.doEvent)
-	if err != nil {
-		logger.Infoln(events)
+	if len(this.doEvent) > 0 {
+		events, err := json.Marshal(this.doEvent)
+		if err != nil {
+			logger.Infoln(events)
+		}
+		this.doEvent = []map[string]interface{}{}
 	}
 }

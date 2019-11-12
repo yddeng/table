@@ -6,6 +6,8 @@ handstable.table = null;
 
 handstable.init = function (container) {
     handstable.container = container
+    handstable.setData([["1","2"],["3","4"]])
+    console.log("connect ok");
 };
 
 handstable.new = function(){
@@ -105,6 +107,8 @@ handstable.new = function(){
         },
         afterSelectionEnd: function(row, col, row2, col2) {
             console.log("afterSelectionEnd",row,col,row2,col2)
+            /*console.log($(".rowHeader").parent().parent().eq(row))
+            $(".rowHeader").parent().parent().eq(row).addClass('ht__highlight cur ht__active_highlight')*/
             var selections = new Array()
             for (var i = row;i <= row2;i++){
                 for (var j = col;j <= col2;j++){

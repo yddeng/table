@@ -74,7 +74,7 @@ rowIndex: 2  , int
 
 ## 删除行, tos
 ```
-cmd : "deleteRow"
+cmd : "removeRow"
 rowIndex: 2  , int
 ```
 
@@ -86,7 +86,7 @@ colIndex: 2  , int
 
 ## 删除列, tos
 ```
-cmd : "deleteCol"
+cmd : "removeCol"
 colIndex: 2  , int
 ```
 
