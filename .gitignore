@@ -1,6 +1,3 @@
-# 配置文件
-conf/conf.toml
-
 # 日志文件
 /log
 *.log

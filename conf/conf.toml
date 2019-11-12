@@ -1,0 +1,7 @@
+# 配置模版，正式去掉后缀template
+
+WSAddr         = "127.0.0.1:4546"     # websocket地址
+HttpAddr       = "127.0.0.1:4545"     # 服务器地址
+LoadDir        = "./app"              # 加载目录
+ExcelPath      = "./excel"            # excel存放目录
+

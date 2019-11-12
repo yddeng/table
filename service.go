@@ -1,34 +1,58 @@
 package table
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/sniperHW/kendynet"
+	listener "github.com/sniperHW/kendynet/socket/listener/websocket"
 	"github.com/yddeng/table/conf"
 	"net/http"
 )
 
 func Start(path string) {
-	//table.InitLogger()
-
-	file, err := OpenExcel("test.xlsx")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	excelFiles[file.fileName] = file
-	c1, _ := file.GetCell("A2")
-	fmt.Println("cellValue1", c1)
-	//file.WriteCell(nil, "A2", "A2")
-	file.xlFile.SetCellValue("Sheet1", "A2", "A2")
-	c2, _ := file.GetCell("A2")
-	fmt.Println("cellValue2", c2)
-
 	conf.LoadConfig(path)
 	_conf := conf.GetConfig()
-	fmt.Printf("start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)
 
+	//InitLogger()
+	//LoadExcel(_conf.ExcelPath)
+	go Loop()
+
+	server, err := listener.New("tcp4", _conf.WSAddr, "/table")
+	if server != nil {
+		fmt.Printf("webasocket start on %s\n", _conf.WSAddr)
+		go func() {
+			err = server.Serve(func(session kendynet.StreamSession) {
+				fmt.Println("new Session", session.RemoteAddr())
+				session.SetCloseCallBack(func(sess kendynet.StreamSession, reason string) {
+					PostTask(func() {
+						OnClose(sess, reason)
+					})
+				})
+				session.Start(func(event *kendynet.Event) {
+					if event.EventType == kendynet.EventTypeError {
+						event.Session.Close(event.Data.(error).Error(), 0)
+					} else {
+						msg := map[string]interface{}{}
+						err := json.Unmarshal(event.Data.(kendynet.Message).Bytes(), &msg)
+						//fmt.Println(err, msg)
+						if err == nil {
+							PostTask(func() {
+								DispatchMessage(msg, session)
+							})
+						}
+					}
+				})
+			})
+			if nil != err {
+				panic(fmt.Sprintf("TcpServer start failed%s\n", err))
+			}
+		}()
+	} else {
+		panic(fmt.Sprintf("NewTcpServer failed %s\n", err))
+	}
+
+	fmt.Printf("http start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(_conf.LoadDir))))
-	http.HandleFunc("/setCellValue", cellValue)
-
 	err = http.ListenAndServe(_conf.HttpAddr, nil)
 	if err != nil {
 		fmt.Println(err)

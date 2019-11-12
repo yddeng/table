@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset='utf-8'>
+	<title> Handsontable</title>
+	<script data-jsfiddle="common" src="./jquery.min.js"></script>
+	<script src="./handsontable.full.js"></script>
+	<script src="./websocket.js"></script>
+	<script src="./message.js"></script>
+	<script src="./handsontable.js"></script>
+	<link rel="stylesheet" media="screen" href="./css/handsontable.full.css">
+</head>
+<body>
+<div id="example" style="width: 100px;height: 500px"></div>
+<script>
+	socket.connect("ws://127.0.0.1:4545/table",function(){
+		console.log("connect ok");
+		socket.send({cmd:'openFile',fileName:"test.xlsx",userName:"deng"});
+	});
+
+	var container = document.getElementById('example');
+	var hot = handstable.init(container)
+
+</script>
+</body>
+</html>

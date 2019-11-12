@@ -2,31 +2,109 @@ package table
 
 import (
 	"fmt"
-	"net/http"
+	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/sniperHW/kendynet"
 )
 
-func cellValue(w http.ResponseWriter, r *http.Request) {
-	_ = r.ParseForm()
+type handFunc func(req map[string]interface{}, session *Session)
 
-	//跨域
-	w.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
-	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
-	w.Header().Set("content-type", "application/json")             //返回数据格式是json
+var dispatcher = map[string]handFunc{}
 
-	var axis string
-	var value string
-	if a, ok := r.Form["axis"]; ok {
-		axis = a[0]
+func DispatchMessage(msg map[string]interface{}, session kendynet.StreamSession) {
+	/*err := checkBase(msg)
+	if err != nil {
+		b, err := json.Marshal(map[string]interface{}{
+			"code": 0,
+			"msg":  err.Error(),
+		})
+		if err == nil {
+			_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+		}
+		fmt.Println(err)
+		return
+	}*/
+
+	cmd := msg["cmd"].(string)
+	if cmd == "openFile" {
+		onOpenFile(msg, session)
+	} else {
+		sess := checkSession(session)
+		if sess != nil {
+			handler, ok := dispatcher[cmd]
+			if ok {
+				handler(msg, sess)
+			} else {
+				fmt.Println("no handler", cmd)
+			}
+		} else {
+			fmt.Println("no session", session.RemoteAddr().String())
+		}
+	}
+}
+
+func checkBase(req map[string]interface{}) error {
+	_, ok := req["cmd"]
+	if !ok {
+		return fmt.Errorf("缺少参数cmd")
 	}
 
-	if v, ok := r.Form["value"]; ok {
-		value = v[0]
+	_, ok = req["fileName"]
+	if !ok {
+		return fmt.Errorf("缺少参数fileName")
 	}
+	return nil
+}
 
-	ef := GetExcel("test.xlsx")
-	err := ef.WriteCell(nil, axis, value)
-	fmt.Println(ef, axis, value, err)
-	c, _ := ef.GetCell(axis)
-	fmt.Println("cellValue", c)
-	ef.Save()
+func checkSession(sess kendynet.StreamSession) *Session {
+	return sessionMap[sess.RemoteAddr().String()]
+}
+
+func handleSetCellValues(req map[string]interface{}, session *Session) {
+	fmt.Println("handleSetCellValues", req)
+
+	cellValues := req["cellValues"].([]interface{})
+	file := session.File
+
+	fields := map[string]interface{}{}
+	for _, v := range cellValues {
+		item := v.(map[string]interface{})
+		cellName, err := excelize.CoordinatesToCellName(int(item["col"].(float64))+1, int(item["row"].(float64))+1)
+		if err == nil {
+			fields[cellName] = item["newValue"]
+		}
+	}
+	file.SetCellValues(fields)
+	_ = file.Save()
+
+	file.PushData()
+
+}
+
+func handleCellSelected(req map[string]interface{}, session *Session) {
+	fmt.Println("handleCellSelected", req)
+
+	selected := req["selected"].([]interface{})
+	file := session.File
+	fmt.Println("handleCellSelected", file)
+
+	// 先清空当前session的锁定
+	for axis, sess := range file.cellLocked {
+		if sess == session {
+			delete(file.cellLocked, axis)
+		}
+	}
+	// 锁定当前选中
+	for _, v := range selected {
+		item := v.(map[string]interface{})
+		cellName, err := excelize.CoordinatesToCellName(int(item["col"].(float64))+1, int(item["row"].(float64))+1)
+		if err == nil {
+			file.cellLocked[cellName] = session
+		}
+	}
+	file.PushData()
+}
+
+func init() {
+	dispatcher["setCellValues"] = handleSetCellValues
+	dispatcher["cellSelected"] = handleCellSelected
 }
