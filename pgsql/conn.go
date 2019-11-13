@@ -4,7 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
-	"strings"
+	"time"
+)
+
+const (
+	host     = "127.0.0.1"
+	port     = 5432
+	user     = "dbuser"
+	password = "123456"
+	dbname   = "excel"
 )
 
 var dbConn *sql.DB
@@ -20,39 +28,13 @@ func sqlOpen() error {
 		return err
 	}
 	dbConn = db
-
-	fmt.Println("Successfully connected!")
 	return nil
 }
 
-func createTable(tableName string) {
-	//client.db.
-}
-
-func insert(tableName string, fields map[string]interface{}) {
-
-	sqlStr := `
-INSERT INTO %s (%s)  
-VALUES (%s);`
-
-	keys, values := []string{}, []string{}
-	args := []interface{}{}
-	var i = 1
-	for k, v := range fields {
-		keys = append(keys, k)
-		values = append(values, fmt.Sprintf("$%d", i))
-		i++
-		args = append(args, v)
-	}
-
-	sqlStatement := fmt.Sprintf(sqlStr, tableName, strings.Join(keys, ","), strings.Join(values, ","))
-	fmt.Println(sqlStatement)
-	row, err := dbConn.Query(sqlStatement, args...)
-
-	fmt.Println(row, err)
-	var id int
-	err = row.Scan(&id)
-	fmt.Println(id, err)
+// 生成日期字符串
+func GenDateTimeString(date time.Time) string {
+	return fmt.Sprintf("%d-%d-%d %d:%d:%d",
+		date.Year(), int(date.Month()), date.Day(), date.Hour(), date.Minute(), date.Second())
 }
 
 func query(tableName string) {
@@ -74,5 +56,12 @@ func query(tableName string) {
 	}
 	for _, v := range out {
 		fmt.Println(v)
+	}
+}
+
+func init() {
+	err := sqlOpen()
+	if err != nil {
+		panic(err)
 	}
 }

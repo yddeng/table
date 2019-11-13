@@ -6,28 +6,33 @@
 	<script data-jsfiddle="common" src="./jquery.min.js"></script>
 	<script src="./handsontable.full.js"></script>
 	<script src="./websocket.js"></script>
-	<script src="./message.js"></script>
 	<script src="./handsontable.js"></script>
+	<script src="./cmd.js"></script>
 	<link rel="stylesheet" media="screen" href="./css/handsontable.full.css">
 	<style>
 		.curRow{
 			color: red;
-			background: #b1b100;
 		}
 	</style>
 </head>
 <body>
+<div style="height: 50px;width: 100%">
+	<span id="user"></span><span id="fileName"></span>
+	<button onclick="saveTable()">保存</button>
+	<input id="rbv" style="width: 20px"/><button onclick="rollback()">回退版本</button>
+</div>
 <div id="table"></div>
 <script>
 
 	console.log(getUrlParam("userName"));
-	/*socket.connect("ws://127.0.0.1:4545/table",function(){
-		console.log("connect ok");
-		socket.send({cmd:'openFile',fileName:"test.xlsx",userName:"deng"});
-	});*/
+	socket.init("ws://127.0.0.1:4545/table","ydd","deng");
 
-	var container = document.getElementById('table');
-	var hot = handstable.init(container)
+	let user = document.getElementById('user');
+	user.innerHTML = String.format(`User:{0} `,"deng");
+	let file = document.getElementById('fileName');
+	file.innerHTML = String.format(`FileName:{0}`,"test");
+
+	var hot = handstable.init(document.getElementById('table'))
 
 	function getUrlParam(name) {
 		let reg = new RegExp('(^|&)'+ name + '=([^&]*)(&|$)')
@@ -38,6 +43,15 @@
 		return null
 	}
 
+	window.onbeforeunload = function (e) {
+		e = e || window.event;
+		// 兼容IE8和Firefox 4之前的版本
+		if (e) {
+			e.returnValue = '关闭提示';
+		}
+		// Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
+		return '关闭提示';
+	};
 </script>
 </body>
 </html>

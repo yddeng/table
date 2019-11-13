@@ -13,8 +13,7 @@ func Start(path string) {
 	conf.LoadConfig(path)
 	_conf := conf.GetConfig()
 
-	//InitLogger()
-	//LoadExcel(_conf.ExcelPath)
+	InitLogger()
 	go Loop()
 
 	server, err := listener.New("tcp4", _conf.WSAddr, "/table")
@@ -37,7 +36,7 @@ func Start(path string) {
 						//fmt.Println(err, msg)
 						if err == nil {
 							PostTask(func() {
-								DispatchMessage(msg, session)
+								Dispatcher(msg, session)
 							})
 						}
 					}
@@ -53,6 +52,11 @@ func Start(path string) {
 
 	fmt.Printf("http start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(_conf.LoadDir))))
+
+	// http handler
+	http.HandleFunc("/createTable", HandleCreateTable)
+	http.HandleFunc("/deleteTable", HandleDeleteTable)
+	http.HandleFunc("/getAllTable", HandleGetAllTable)
 	err = http.ListenAndServe(_conf.HttpAddr, nil)
 	if err != nil {
 		fmt.Println(err)

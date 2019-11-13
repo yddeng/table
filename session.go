@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sniperHW/kendynet"
-	"github.com/yddeng/table/conf"
-	"path"
+	"github.com/sniperHW/kendynet/message"
+	"github.com/yddeng/table/pgsql"
+	"sync"
 )
 
 var (
@@ -13,58 +14,81 @@ var (
 )
 
 type Session struct {
+	sync.Mutex
 	kendynet.StreamSession
-	File     *ExcelFile
+	Table    *Table
 	UserName string
-	doEvent  []map[string]interface{}
+	doCmds   []map[string]interface{}
 }
 
-func NewSession(session kendynet.StreamSession, file *ExcelFile, name string) *Session {
+func NewSession(session kendynet.StreamSession, file *Table, name string) *Session {
 	return &Session{
 		StreamSession: session,
-		File:          file,
+		Table:         file,
 		UserName:      name,
-		doEvent:       []map[string]interface{}{},
+		doCmds:        []map[string]interface{}{},
 	}
 }
 
 func OnClose(sess kendynet.StreamSession, reason string) {
 	if session, ok := sessionMap[sess.RemoteAddr().String()]; ok {
 		fmt.Println("onclose", reason)
-		session.File.RemoveSession(session)
-		session.File = nil
+		session.Table.RemoveSession(session)
+		if len(session.doCmds) > 0 {
+			rollbackCmds(session.Table.tmpFile, session.doCmds)
+			cmdsStr, err := json.Marshal(session.doCmds)
+			if err == nil {
+				logger.Infoln("rollback", string(cmdsStr))
+			}
+			session.Table.PushData()
+		}
+		session.Table = nil
 		delete(sessionMap, sess.RemoteAddr().String())
 	}
 }
 
-func onOpenFile(req map[string]interface{}, session kendynet.StreamSession) {
-	fmt.Println("handleOpenFile", req)
+func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
+	fmt.Println("handleOpenTable", req)
 
-	fileName := req["fileName"].(string)
+	tableName := req["tableName"].(string)
 	userName := req["userName"].(string)
-	ef, ok := excelFiles[fileName]
+	table, ok := tables[tableName]
 	if !ok {
-		_conf := conf.GetConfig()
-		ef, _ = OpenExcel(path.Join(_conf.ExcelPath, fileName))
-		excelFiles[fileName] = ef
+		table, _ = OpenTable(tableName)
+		tables[tableName] = table
 	}
 
-	sess := NewSession(session, ef, userName)
+	sess := NewSession(session, table, userName)
 	sessionMap[sess.RemoteAddr().String()] = sess
-	ef.AddSession(sess)
-	ef.PushData()
+	table.AddSession(sess)
+
+	resp := map[string]interface{}{
+		"cmd":       "openTable",
+		"tableName": tableName,
+		"userName":  userName,
+		"version":   table.version,
+	}
+	data, _ := getAll(table.tmpFile)
+	resp["data"] = data
+	b, _ := json.Marshal(resp)
+	session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 }
 
-func (this *Session) addEvent(event map[string]interface{}) {
-	this.doEvent = append(this.doEvent, event)
+func (this *Session) addCmd(cmd map[string]interface{}) {
+	this.doCmds = append(this.doCmds, cmd)
 }
 
-func (this *Session) SaveEvent() {
-	if len(this.doEvent) > 0 {
-		events, err := json.Marshal(this.doEvent)
-		if err != nil {
-			logger.Infoln(events)
+func (this *Session) SaveCmd() {
+	if len(this.doCmds) > 0 {
+		cmdsStr, err := json.Marshal(this.doCmds)
+		if err == nil {
+			logger.Infoln(string(cmdsStr))
+			v, err := pgsql.InsertCmd(this.Table.fileName, this.UserName, string(cmdsStr))
+			if err == nil {
+				this.Table.version = v
+				this.Table.SaveTable()
+			}
 		}
-		this.doEvent = []map[string]interface{}{}
+		this.doCmds = []map[string]interface{}{}
 	}
 }

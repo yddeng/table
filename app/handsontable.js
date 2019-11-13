@@ -1,20 +1,23 @@
 var handstable = {};
 
 handstable.container = null;
+handstable.version = null;
 handstable.data = null;
 handstable.table = null;
 
 handstable.init = function (container) {
-    handstable.container = container
-    handstable.setData([["1","2"],["3","4"]])
-    console.log("connect ok");
+    this.container = container
 };
 
-handstable.new = function(){
-    handstable.table =  new Handsontable(handstable.container, {
-        data: handstable.data,
+handstable.new = function(data){
+    if (data.length ==0){
+        data = [[]]
+    }
+    this.data = data
+    this.table =  new Handsontable(handstable.container, {
+        data: data,
 
-        width:'1200px',
+        width:'100%',
         height:'500px',
 
         minCols:46, //最小列数
@@ -123,22 +126,24 @@ handstable.new = function(){
 };
 
 handstable.setData = function(data){
-    this.data = data;
-    if (this.table) {
-        this.table.loadData(data)
-    }else {
-        this.new()
+    handstable.data = data;
+    if (handstable.table) {
+        handstable.table.loadData(data)
     }
 };
+
+handstable.setVersion = function(v){
+    handstable.version = v
+}
 
 handstable.setSelected = function(selected){
     for (var i  = 0;i < selected.length;i++){
         var item = selected[i]
         //handstable.table.selectRows(item.row)
-        let source = this.table.getRowHeader(item.row)
+        let source = handstable.table.getRowHeader(item.row)
         //this.table.set
         console.log("selected",source)
-        console.log("selected",item.row,item.col,this.table.getDataAtCell(item.row,item.col))
+        console.log("selected",item.row,item.col,handstable.table.getDataAtCell(item.row,item.col))
         /*let tr = document.getElementsByClassName("current")
         console.log("selected",tr,tr.length)
         for (i = 0; i < tr.length; i++) {
@@ -151,7 +156,7 @@ handstable.setSelected = function(selected){
 }
 
 handstable.pos2Axis = function(col,row){
-    return  String.format("{0}{1}",this.table.getColHeader(col),this.table.getRowHeader(row));
+    return  String.format("{0}{1}",handstable.table.getColHeader(col),this.table.getRowHeader(row));
 };
 
 handstable.addHook = function(key,callback){

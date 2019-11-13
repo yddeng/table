@@ -22,8 +22,17 @@ data      表数据，blob
 ```
 version   表版本号，int类型自增，
 userName  当前版本提交用户名，string
-change    变量，blob
+cmds      操作指令，blob
 ```
+
+3。
+table_data // 存储每张表当前的版本号及数据
+```
+table_name // 表名
+now_version // 版本号
+data   // 数据
+```
+
 
 ## 表是否存在的判断
 用户删除某一张表，则不用显示给前端，但任然保留表数据，退档使用
@@ -39,31 +48,57 @@ tagName       tag,string
 
 # 支持操作
 
-## 创建表
-```
-cmd : "createTable"
-fileName : "xxx"
-```
+## 创建表 http
+req  createTable?tableName=xxx&userName=xxx
+resp ok= 1/0
 
-## 删除表
-```
-cmd : "deleteTable"
-fileName : "xxx"
-```
+## 删除表 http
+req  deleteTable?tableName=xxx&userName=xxx
+resp ok= 1/0
+
+## 表列表 http
+req  getAllTable
+resp ok= 1/0
+     tables = []{tableName:string,version:int}
+        
+websocket
 
 ## pushData 推送最新的表数据, toc
 ```
 cmd : "pushData"
+vsersion : int
 data:  data  //[][]string
-cellLocked:  // []map[string]string 
-                []{col:int,row:int,userName:string}
 ```
 
-## openFile 打开文件, tos
+## pushCellData 推送变化的单元格数据
 ```
-cmd : "openFile"
-fileName : "xxx.xlsx"
+cmd : "pushCellData"
+cellDate:  // []map[string]string 
+              []{col:int,row:int,oldValue:string,newValue:string,userName:string}
+```
+
+## pushCellSelected
+```
+cmd : "pushCellSelected"
+selected:  // []map[string]string 
+              []{col:int,row:int,userName:string}
+```
+
+## openTable 打开文件
+tos
+```
+cmd : "openTable"
+tableName : "xxx.xlsx"
 userName: "deng"
+```
+
+toc
+```
+cmd : "openTable"
+tableName : "xxx.xlsx"
+userName: "deng"
+version : int
+data: [][]string
 ```
 
 ## 插入行, tos
@@ -104,8 +139,30 @@ selected: []map[string]string
           []{col:int,row:int}
 ```
 
-## 保存操作，tos
+## 保存表，tos
 ```
-cmd : "saveFile"
+cmd : "saveTable"
 ```
+
+## 回退表
+tos
+```
+cmd  : "rollback"
+now  : int // 当前版本号
+goto : int // 回退到版本号
+```
+
+toc
+```
+cmd    : "rollback"
+ok     : int
+msg    : string
+version: int
+data   :  //[][]string
+```
+
  
+ # 冲突
+ 
+锁定格子，当A用户编辑了一个格子，必须保存后，B用户才能再编辑。
+若A用户将A1格子由0写为1，B用户将A1格子1改为2，如果A用户不保存后退出，编辑回退，B用户看到的为0。
