@@ -4,6 +4,7 @@ handstable.container = null;
 handstable.version = null;
 handstable.data = null;
 handstable.table = null;
+handstable.selected = new Array();
 
 handstable.init = function (container) {
     this.container = container
@@ -34,7 +35,7 @@ handstable.new = function(data){
         manualRowResize: true, //允许拖曳行表头，默认为false
         manualColumnMove: false, //true/false 当值为true时，列可拖拽移动到指定列
         manualRowMove: false, //true/false当值为true时，行可拖拽至指定行
-        currentRowClassName:"curRow", //给当前行设置样式名（鼠标点击某个单元格，则整行给样式）
+        //currentRowClassName:"curRow", //给当前行设置样式名（鼠标点击某个单元格，则整行给样式）
         //currentColClassName:"cur", //给当前行列设置样式名（鼠标点击某个单元格，则整行给样式）
         autoColumnSize: true, //当值为true且列宽未设置时，自适应列大小
         //columnWidth:50,
@@ -156,29 +157,26 @@ handstable.setData = function(data){
 };
 
 handstable.setVersion = function(v){
-    handstable.version = v
-    let ver = document.getElementById('n_version')
+    handstable.version = v;
+    let ver = document.getElementById('n_version');
     ver.innerText = handstable.version
-}
+};
 
 handstable.setSelected = function(selected){
-    for (var i  = 0;i < selected.length;i++){
-        var item = selected[i]
-        //handstable.table.selectRows(item.row)
-        let source = handstable.table.getRowHeader(item.row)
-        //this.table.set
-        console.log("selected",source)
-        console.log("selected",item.row,item.col,handstable.table.getDataAtCell(item.row,item.col))
-        /*let tr = document.getElementsByClassName("current")
-        console.log("selected",tr,tr.length)
-        for (i = 0; i < tr.length; i++) {
-            tr[i].style.backgroundColor='#005EFF';
-        }*/
-        //handstable.table.show
-       //handstable.table.setDataAtCell(item.col,item.row,"ss")
-
+    for (var i  = 0;i < handstable.selected.length;i++){
+        let cell = handstable.selected[i]
+        cell.style = "";
+        handstable.selected = new Array()
     }
-}
+    for (var i  = 0;i < selected.length;i++){
+        var item = selected[i];
+        let cell = handstable.table.getCell(item.row,item.col);
+        handstable.selected.push(cell)
+        console.log("selected",item.row,item.col,cell);
+        cell.style.background = "#000000";
+        cell.style.color = "#FFF000";
+    }
+};
 
 handstable.pos2Axis = function(col,row){
     return  util.format("{0}{1}",handstable.table.getColHeader(col),this.table.getRowHeader(row));

@@ -18,6 +18,7 @@ type Table struct {
 	xlFile     *excelize.File           // 指令计算的结果文件，最终落地到数据库
 	sessionMap map[string]*Session      // session, for remoteAddr
 	cmds       []map[string]interface{} // 指令集合
+	cmdUsers   []string
 }
 
 var (
@@ -50,6 +51,7 @@ func OpenTable(tableName string) (*Table, error) {
 		xlFile:     xlFile,
 		sessionMap: map[string]*Session{},
 		cmds:       []map[string]interface{}{},
+		cmdUsers:   []string{},
 	}, nil
 }
 
@@ -60,7 +62,8 @@ func (this *Table) SaveTable() error {
 
 		// 保存版本指令
 		cmdsStr, _ := json.Marshal(this.cmds)
-		v, err := pgsql.InsertCmd(this.tableName, "user", string(cmdsStr))
+		users, _ := json.Marshal(this.cmdUsers)
+		v, err := pgsql.InsertCmd(this.tableName, string(users), string(cmdsStr))
 		if err != nil {
 			return err
 		}
@@ -101,6 +104,12 @@ func cloneFile(file *excelize.File, data [][]string) {
 
 func (this *Table) AddCmd(cmd map[string]interface{}, userName string) {
 	this.cmds = append(this.cmds, cmd)
+	for _, name := range this.cmdUsers {
+		if name == userName {
+			return
+		}
+	}
+	this.cmdUsers = append(this.cmdUsers, userName)
 }
 
 func (ef *Table) AddSession(session *Session) {

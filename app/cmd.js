@@ -59,7 +59,7 @@ dispatcher.handler["openTable"] = function(msg) {
 };
 
 dispatcher.handler["pushCellSelected"] = function(msg) {
-    //handstable.setData(msg.data)
+    handstable.setSelected(msg.selected)
 };
 
 dispatcher.handler["pushCellData"] = function(msg) {
@@ -69,6 +69,7 @@ dispatcher.handler["pushCellData"] = function(msg) {
 dispatcher.handler["pushSaveTable"] = function(msg) {
     handstable.setData(msg.data)
     handstable.setVersion(msg.version)
+    util.alert("文件已保存")
 };
 
 dispatcher.handler["pushAll"] = function(msg) {
