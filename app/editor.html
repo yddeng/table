@@ -8,6 +8,8 @@
 	<script src="./websocket.js"></script>
 	<script src="./handsontable.js"></script>
 	<script src="./cmd.js"></script>
+	<script src="./util.js"></script>
+
 	<link rel="stylesheet" media="screen" href="./css/handsontable.full.css">
 	<style>
 		.curRow{
@@ -19,35 +21,28 @@
 <div style="height: 50px;width: 100%">
 	<span id="user"></span><span id="tableName"></span>
 	<button onclick="saveTable()">保存</button>
-	<span>当前版本：<i id="n_version"></i>  </span><input id="rbv" style="width: 20px"/><button onclick="rollback()">回退版本</button>
+	<span>当前版本：<i id="n_version"></i>  </span><input id="rbv" style="width: 20px"/><button onclick="lookHistory()">查看版本</button>
 </div>
 <div id="table"></div>
 <script>
 
-	let tableName = getUrlParam("tableName");
-	let userName = getUrlParam("userName");
+	let tableName = util.getUrlParam("tableName");
+	let userName = util.getUrlParam("userName");
 	console.log(tableName,userName);
 	if (tableName != null && userName!=null){
 		socket.init("ws://10.128.2.252:4545/table",tableName,userName);
 
 		let user = document.getElementById('user');
-		user.innerHTML = String.format(`用户:{0} `,userName);
+		user.innerHTML = util.format(`用户:{0} `,userName);
 		let file = document.getElementById('tableName');
-		file.innerHTML = String.format(`表名:{0}`,tableName);
+		file.innerHTML = util.format(`表名:{0}`,tableName);
 
 		var hot = handstable.init(document.getElementById('table'))
 	}else {
-		alert("参数错误")
+		util.alert("参数错误")
 	}
 
-	function getUrlParam(name) {
-		let reg = new RegExp('(^|&)'+ name + '=([^&]*)(&|$)')
-		let r = window.location.search.substr(1).match(reg)
-		if(r!=null){
-			return unescape(r[2])
-		}
-		return null
-	}
+
 
 	window.onbeforeunload = function (e) {
 		e = e || window.event;

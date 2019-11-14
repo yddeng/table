@@ -33,7 +33,6 @@ func Start(path string) {
 					} else {
 						msg := map[string]interface{}{}
 						err := json.Unmarshal(event.Data.(kendynet.Message).Bytes(), &msg)
-						//fmt.Println(err, msg)
 						if err == nil {
 							PostTask(func() {
 								Dispatcher(msg, session)

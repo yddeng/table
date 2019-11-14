@@ -4,19 +4,19 @@ function openTable(tableName,userName) {
 }
 
 function insertRow(idx) {
-    socket.send({cmd:'insertRow',rowIndex:idx});
+    socket.send({cmd:'insertRow',index:idx});
 }
 
 function removeRow(idx) {
-    socket.send({cmd:'removeRow',rowIndex:idx});
+    socket.send({cmd:'removeRow',index:idx});
 }
 
 function insertCol(idx) {
-    socket.send({cmd:'insertCol',colIndex:idx});
+    socket.send({cmd:'insertCol',index:idx});
 }
 
 function removeCol(idx) {
-    socket.send({cmd:'removeCol',colIndex:idx});
+    socket.send({cmd:'removeCol',index:idx});
 }
 
 function setCellValues(data ) {
@@ -31,19 +31,15 @@ function saveTable() {
     socket.send({cmd:"saveTable"})
 }
 
-function rollback() {
+function lookHistory() {
     let txt = $("#rbv").val();
     let v = parseInt(txt)
-    socket.send({cmd:"rollback",now:handstable.version, goto:v})
+    socket.send({cmd:"lookHistory",version:v})
 }
 
 /*****************************************************************************************/
 var dispatcher = {};
 dispatcher.handler = {};
-
-dispatcher.error = function(msg){
-    console.log("error",msg.code,msg.msg)
-};
 
 dispatcher.DispatchMessage = function(msg) {
     var handler = dispatcher.handler[msg.cmd];
@@ -51,6 +47,10 @@ dispatcher.DispatchMessage = function(msg) {
     if(handler){
         handler(msg);
     }
+};
+
+dispatcher.handler["pushErr"] = function(msg) {
+    util.alert(util.format("cmd:{0},errMsg:{1}",msg.doCmd,msg.errMsg))
 };
 
 dispatcher.handler["openTable"] = function(msg) {
@@ -66,15 +66,18 @@ dispatcher.handler["pushCellData"] = function(msg) {
     //handstable.setData(msg.data)
 };
 
-dispatcher.handler["pushData"] = function(msg) {
+dispatcher.handler["pushSaveTable"] = function(msg) {
     handstable.setData(msg.data)
     handstable.setVersion(msg.version)
 };
 
-dispatcher.handler["rollback"] = function(msg) {
-    if (msg.ok == 1){
-        handstable.setVersion(msg.version)
-        handstable.setData(msg.data)
-    }
+dispatcher.handler["pushAll"] = function(msg) {
+    handstable.setData(msg.data)
+    handstable.setVersion(msg.version)
+};
+
+dispatcher.handler["lookHistory"] = function(msg) {
+    handstable.setVersion(msg.version)
+    handstable.setData(msg.data)
 };
 

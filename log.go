@@ -8,6 +8,6 @@ var logger *log.Logger
 
 func InitLogger() {
 	logger = log.NewLogger("./", "cmd", 1024*1024)
-	log.CloseStdOut()
+	//log.CloseStdOut()
 	logger.Infoln("init log")
 }

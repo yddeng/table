@@ -1,6 +1,7 @@
 package table
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
 )
@@ -45,30 +46,30 @@ func doCmd(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 }
 
 func insertRow(file *excelize.File, req map[string]interface{}, rollbcak bool) {
-	rowIndex := req["rowIndex"].(int)
+	index := int(req["index"].(float64)) + 1
 	var err error
 	if rollbcak {
-		err = file.RemoveRow(Sheet, rowIndex)
+		err = file.RemoveRow(Sheet, index)
 	} else {
-		err = file.InsertRow(Sheet, rowIndex)
+		err = file.InsertRow(Sheet, index)
 	}
 	checkErr(err)
 }
 
 func removeRow(file *excelize.File, req map[string]interface{}, rollbcak bool) {
-	rowIndex := req["rowIndex"].(int)
+	index := int(req["index"].(float64)) + 1
 	var err error
 	if rollbcak {
-		err = file.InsertRow(Sheet, rowIndex)
+		err = file.InsertRow(Sheet, index)
 	} else {
-		err = file.RemoveRow(Sheet, rowIndex)
+		err = file.RemoveRow(Sheet, index)
 	}
 	checkErr(err)
 }
 
 func insertCol(file *excelize.File, req map[string]interface{}, rollbcak bool) {
-	colIndex := req["colIndex"].(int)
-	celHeader, err := excelize.ColumnNumberToName(colIndex)
+	index := int(req["index"].(float64)) + 1
+	celHeader, err := excelize.ColumnNumberToName(index)
 	checkErr(err)
 	if rollbcak {
 		err = file.RemoveCol(Sheet, celHeader)
@@ -79,8 +80,8 @@ func insertCol(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 }
 
 func removeCol(file *excelize.File, req map[string]interface{}, rollbcak bool) {
-	colIndex := req["colIndex"].(int)
-	celHeader, err := excelize.ColumnNumberToName(colIndex)
+	index := int(req["index"].(float64)) + 1
+	celHeader, err := excelize.ColumnNumberToName(index)
 	checkErr(err)
 	if rollbcak {
 		err = file.InsertCol(Sheet, celHeader)
@@ -107,4 +108,37 @@ func setCellValues(file *excelize.File, req map[string]interface{}, rollbcak boo
 
 func getAll(file *excelize.File) ([][]string, error) {
 	return file.GetRows(Sheet)
+}
+
+//## pushAll 推送所有数据
+//```
+//cmd : "pushAll"
+//tableName : "xxx"
+//logicVer : int
+//version : int
+//data:  // [][]string
+//```
+func makePushAll(tableName string, version int, data [][]string) ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"cmd":       "pushAll",
+		"tableName": tableName,
+		"version":   version,
+		"data":      data,
+	})
+
+}
+
+//## pushSaveTable 保存表后推送
+//```
+//cmd : "pushSaveTable"
+//logicVer : int
+//version : int
+//data:  // [][]string
+//```
+func makeSaveTable(version int, data [][]string) ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"cmd":     "pushSaveTable",
+		"version": version,
+		"data":    data,
+	})
 }

@@ -44,8 +44,6 @@ tagName       tag,string
 或者拼接字符串  "tableName：version"  
 ```
 
-
-
 # 支持操作
 
 ## 创建表 http
@@ -72,13 +70,6 @@ resp ok= 1/0
         
 websocket
 
-## pushData 推送最新的表数据, toc
-```
-cmd : "pushData"
-vsersion : int
-data:  data  //[][]string
-```
-
 ## pushCellData 推送变化的单元格数据
 ```
 cmd : "pushCellData"
@@ -91,6 +82,28 @@ cellDate:  // []map[string]string
 cmd : "pushCellSelected"
 selected:  // []map[string]string 
               []{col:int,row:int,userName:string}
+```
+
+## pushSaveTable 保存表后推送
+```
+cmd : "pushSaveTable"
+version : int
+data:  // [][]string
+```
+
+## pushAll 推送所有数据
+```
+cmd : "pushAll"
+tableName : "xxx"
+version : int
+data:  // [][]string
+```
+
+## pushError 返回错误信息
+```
+cmd : "pushError"
+doCmd:  string
+errMsg: string            
 ```
 
 ## openTable 打开文件
@@ -113,25 +126,25 @@ data: [][]string
 ## 插入行, tos
 ```
 cmd : "insertRow"
-rowIndex: 2  , int
+index: 2  , int
 ```
 
 ## 删除行, tos
 ```
 cmd : "removeRow"
-rowIndex: 2  , int
+index: 2  , int
 ```
 
 ## 插入列, tos
 ```
 cmd : "insertCol"
-colIndex: 2  , int
+index: 2  , int
 ```
 
 ## 删除列, tos
 ```
 cmd : "removeCol"
-colIndex: 2  , int
+index: 2  , int
 ```
 
 ## 修改数据, tos
@@ -153,19 +166,31 @@ selected: []map[string]string
 cmd : "saveTable"
 ```
 
-## 回退表
+
+## 查看历史版
+tos
+```
+cmd    : "lookHistory"
+version: int
+```
+
+toc
+```
+cmd    : "lookHistory"
+version: int
+data   :  //[][]string
+```
+
+## 回退到历史版本
 tos
 ```
 cmd  : "rollback"
-now  : int // 当前版本号
 goto : int // 回退到版本号
 ```
 
 toc
 ```
 cmd    : "rollback"
-ok     : int
-msg    : string
 version: int
 data   :  //[][]string
 ```
@@ -175,3 +200,7 @@ data   :  //[][]string
  
 锁定格子，当A用户编辑了一个格子，必须保存后，B用户才能再编辑。
 若A用户将A1格子由0写为1，B用户将A1格子1改为2，如果A用户不保存后退出，编辑回退，B用户看到的为0。
+
+
+## 
+1.不能有空行，必须的填有字段
