@@ -51,15 +51,24 @@ tagName       tag,string
 ## 创建表 http
 req  createTable?tableName=xxx&userName=xxx
 resp ok= 1/0
+     msg= string
 
 ## 删除表 http
 req  deleteTable?tableName=xxx&userName=xxx
 resp ok= 1/0
+     msg= string
 
 ## 表列表 http
 req  getAllTable
 resp ok= 1/0
+     msg= string
      tables = []{tableName:string,version:int}
+        
+## 下载表 http
+req  downloadTable?tableName=xxx
+resp ok= 1/0
+     msg= string
+     file
         
 websocket
 

@@ -73,6 +73,7 @@ func handleCellSelected(req map[string]interface{}, session *Session) {
 func handleSaveTable(req map[string]interface{}, session *Session) {
 	doCmds(session.Table.xlFile, session.doCmds)
 	session.SaveCmd()
+	session.Table.PushData()
 }
 
 func handleRollback(req map[string]interface{}, session *Session) {
@@ -232,6 +233,7 @@ func HandleDeleteTable(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 获取文件列表
 func HandleGetAllTable(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
 	logger.Infoln("HandleGetAllTable request", r.Method, r.Form)
@@ -251,6 +253,53 @@ func HandleGetAllTable(w http.ResponseWriter, r *http.Request) {
 		"ok":     1,
 		"tables": ret,
 	}); err != nil {
+		logger.Errorf("http resp err:", err)
+	}
+}
+
+// 下载excel
+func HandleDownloadTable(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	logger.Infoln("HandleGetAllTable request", r.Method, r.Form)
+
+	//跨域
+	w.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
+	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
+	w.Header().Set("content-type", "application/json")             //返回数据格式是json
+
+	var tableName string
+	if t, ok := r.Form["tableName"]; ok {
+		tableName = t[0]
+	}
+
+	if tableName == "" {
+		httpErr("参数错误", w)
+		return
+	}
+
+	_, data, err := pgsql.LoadTableData(tableName)
+	if err != nil {
+		httpErr(err.Error(), w)
+		return
+	}
+
+	xlFile := newFile()
+	cloneFile(xlFile, data)
+	fileName := fmt.Sprintf("%s.xlsx", tableName)
+	err = xlFile.SaveAs(fileName)
+	if err != nil {
+		httpErr(err.Error(), w)
+		return
+	}
+
+	file, err := excelize.OpenFile(fileName)
+	if err != nil {
+		httpErr(err.Error(), w)
+		return
+	}
+
+	err = file.Write(w)
+	if err != nil {
 		logger.Errorf("http resp err:", err)
 	}
 }

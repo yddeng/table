@@ -134,6 +134,8 @@ handstable.setData = function(data){
 
 handstable.setVersion = function(v){
     handstable.version = v
+    let ver = document.getElementById('n_version')
+    ver.innerText = handstable.version
 }
 
 handstable.setSelected = function(selected){

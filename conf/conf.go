@@ -3,10 +3,9 @@ package conf
 import "github.com/BurntSushi/toml"
 
 type Config struct {
-	WSAddr    string
-	HttpAddr  string
-	LoadDir   string
-	ExcelPath string
+	WSAddr   string
+	HttpAddr string
+	LoadDir  string
 }
 
 var config *Config

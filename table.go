@@ -39,7 +39,7 @@ func OpenTable(fileName string) (*Table, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(v, data, err)
+	//fmt.Println(v, data, err)
 	xlFile := newFile()
 	tmpFile := newFile()
 	cloneFile(xlFile, data)
