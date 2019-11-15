@@ -1,8 +1,6 @@
 package table
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
@@ -28,7 +26,7 @@ func rollbackCmds(file *excelize.File, req []map[string]interface{}) {
 
 func doCmd(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 	cmd := req["cmd"].(string)
-	fmt.Println("doCmd", cmd, rollbcak)
+	//fmt.Println("doCmd", cmd, rollbcak)
 	switch cmd {
 	case "insertRow":
 		insertRow(file, req, rollbcak)
@@ -108,37 +106,4 @@ func setCellValues(file *excelize.File, req map[string]interface{}, rollbcak boo
 
 func getAll(file *excelize.File) ([][]string, error) {
 	return file.GetRows(Sheet)
-}
-
-//## pushAll 推送所有数据
-//```
-//cmd : "pushAll"
-//tableName : "xxx"
-//logicVer : int
-//version : int
-//data:  // [][]string
-//```
-func makePushAll(tableName string, version int, data [][]string) ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"cmd":       "pushAll",
-		"tableName": tableName,
-		"version":   version,
-		"data":      data,
-	})
-
-}
-
-//## pushSaveTable 保存表后推送
-//```
-//cmd : "pushSaveTable"
-//logicVer : int
-//version : int
-//data:  // [][]string
-//```
-func makeSaveTable(version int, data [][]string) ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		"cmd":     "pushSaveTable",
-		"version": version,
-		"data":    data,
-	})
 }

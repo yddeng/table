@@ -58,6 +58,7 @@ func OpenTable(tableName string) (*Table, error) {
 // 保存，这里指落地到数据库
 func (this *Table) SaveTable() error {
 	if len(this.cmds) > 0 {
+		// todo 验证正确性
 		doCmds(this.xlFile, this.cmds)
 
 		// 保存版本指令
@@ -124,10 +125,31 @@ func (ef *Table) RemoveSession(session *Session) {
 	}
 }
 
+// 转发命令
+func (this *Table) pushAllSession(msg map[string]interface{}) {
+	b, _ := json.Marshal(msg)
+	for _, session := range this.sessionMap {
+		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+	}
+}
+
+func (this *Table) pushOtherUser(msg map[string]interface{}, userName string) {
+	b, _ := json.Marshal(msg)
+	for _, session := range this.sessionMap {
+		if session.UserName != userName {
+			_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+		}
+	}
+}
+
 // pushSaveTable 保存表后推送
 func (this *Table) pushSaveTable() {
 	data, _ := getAll(this.xlFile)
-	b, _ := makeSaveTable(this.version, data)
+	b, _ := json.Marshal(map[string]interface{}{
+		"cmd":     "pushSaveTable",
+		"version": this.version,
+		"data":    data,
+	})
 	for _, session := range this.sessionMap {
 		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 	}
@@ -136,7 +158,11 @@ func (this *Table) pushSaveTable() {
 // pushAll 推送所有数据
 func (this *Table) pushAll() {
 	data, _ := getAll(this.tmpFile)
-	b, _ := makePushAll(this.tableName, this.version, data)
+	b, _ := json.Marshal(map[string]interface{}{
+		"cmd":     "pushAll",
+		"version": this.version,
+		"data":    data,
+	})
 	for _, session := range this.sessionMap {
 		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 	}

@@ -4,37 +4,63 @@ function openTable(tableName,userName) {
 }
 
 function insertRow(idx) {
-    socket.send({cmd:'insertRow',index:idx});
+    if (handstable.status === StatusEnum.EDITOR){
+        socket.send({cmd:'insertRow',index:idx});
+    }
 }
 
 function removeRow(idx) {
-    socket.send({cmd:'removeRow',index:idx});
+    if (handstable.status === StatusEnum.EDITOR) {
+        socket.send({cmd: 'removeRow', index: idx});
+    }
 }
 
 function insertCol(idx) {
-    socket.send({cmd:'insertCol',index:idx});
+    if (handstable.status === StatusEnum.EDITOR) {
+        socket.send({cmd: 'insertCol', index: idx});
+    }
 }
 
 function removeCol(idx) {
-    socket.send({cmd:'removeCol',index:idx});
+    if (handstable.status === StatusEnum.EDITOR) {
+        socket.send({cmd: 'removeCol', index: idx});
+    }
 }
 
 function setCellValues(data ) {
-    socket.send({cmd:'setCellValues',cellValues:data});
+    if (handstable.status === StatusEnum.EDITOR) {
+        socket.send({cmd: 'setCellValues', cellValues: data});
+    }
 }
 
 function cellSelected(data) {
-    socket.send({cmd:'cellSelected',selected:data});
+    if (handstable.status === StatusEnum.EDITOR) {
+        socket.send({cmd: 'cellSelected', selected: data});
+    }
 }
 
 function saveTable() {
-    socket.send({cmd:"saveTable"})
+    if (handstable.status === StatusEnum.EDITOR) {
+        socket.send({cmd: "saveTable"})
+    }
 }
 
 function lookHistory() {
-    let txt = $("#rbv").val();
+    let txt = $("#lookv").val();
     let v = parseInt(txt)
     socket.send({cmd:"lookHistory",version:v})
+}
+
+function backEditor() {
+    if (handstable.status === StatusEnum.LOOK) {
+        socket.send({cmd: "backEditor"})
+    }
+}
+
+function rollback() {
+    let txt = $("#rbv").val();
+    let v = parseInt(txt)
+    socket.send({cmd:"rollback",version:v})
 }
 
 /*****************************************************************************************/
@@ -50,7 +76,7 @@ dispatcher.DispatchMessage = function(msg) {
 };
 
 dispatcher.handler["pushErr"] = function(msg) {
-    util.alert(util.format("cmd:{0},errMsg:{1}",msg.doCmd,msg.errMsg))
+    util.alert(util.format("cmd:{0}\nerrMsg:{1}",msg.doCmd,msg.errMsg))
 };
 
 dispatcher.handler["openTable"] = function(msg) {
@@ -58,27 +84,62 @@ dispatcher.handler["openTable"] = function(msg) {
     handstable.setVersion(msg.version)
 };
 
-dispatcher.handler["pushCellSelected"] = function(msg) {
-    handstable.setSelected(msg.selected)
-};
-
-dispatcher.handler["pushCellData"] = function(msg) {
-    //handstable.setData(msg.data)
+dispatcher.handler["cellSelected"] = function(msg) {
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.setSelected(msg.userName, msg.selected)
+    }
 };
 
 dispatcher.handler["pushSaveTable"] = function(msg) {
-    handstable.setData(msg.data)
-    handstable.setVersion(msg.version)
-    util.alert("文件已保存")
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.setData(msg.data)
+        handstable.setVersion(msg.version)
+        util.alert("文件已保存")
+    }
+};
+
+dispatcher.handler["insertRow"] = function(msg) {
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.insertRow(msg.index)
+    }
+};
+dispatcher.handler["removeRow"] = function(msg) {
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.removeRow(msg.index)
+    }
+};
+dispatcher.handler["insertCol"] = function(msg) {
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.insertCol(msg.index)
+    }
+};
+dispatcher.handler["removeCol"] = function(msg) {
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.removeCol(msg.index)
+    }
 };
 
 dispatcher.handler["pushAll"] = function(msg) {
-    handstable.setData(msg.data)
-    handstable.setVersion(msg.version)
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.setData(msg.data);
+        handstable.setVersion(msg.version)
+    }
 };
 
 dispatcher.handler["lookHistory"] = function(msg) {
-    handstable.setVersion(msg.version)
-    handstable.setData(msg.data)
+    handstable.setVersion(msg.version);
+    handstable.setData(msg.data);
+    handstable.setStatue(StatusEnum.LOOK);
 };
 
+dispatcher.handler["backEditor"] = function(msg) {
+    handstable.setVersion(msg.version);
+    handstable.setData(msg.data);
+    handstable.setStatue(StatusEnum.EDITOR);
+};
+
+dispatcher.handler["rollback"] = function(msg) {
+    handstable.setVersion(msg.version);
+    handstable.setData(msg.data);
+    util.alert(util.format("版本已回退到:{0}",msg.version))
+};

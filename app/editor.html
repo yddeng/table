@@ -21,7 +21,11 @@
 <div style="height: 50px;width: 100%">
 	<span id="user"></span><span id="tableName"></span>
 	<button onclick="saveTable()">保存</button>
-	<span>当前版本：<i id="n_version"></i>  </span><input id="rbv" style="width: 20px"/><button onclick="lookHistory()">查看版本</button>
+	<span>状态：<i id="status"></i>  </span>
+	<span>当前版本：<i id="n_version"></i>  </span><input id="lookv" style="width: 20px"/><button onclick="lookHistory()">查看版本</button>
+	<button onclick="backEditor()">回到编辑</button>
+	<input id="rbv" style="width: 20px"/><button onclick="rollback()">回退版本</button>
+	<button onclick="downExcel()">导出Excel</button> <button onclick="showData()">显示数据</button>
 </div>
 <div id="table"></div>
 <script>
@@ -30,19 +34,17 @@
 	let userName = util.getUrlParam("userName");
 	console.log(tableName,userName);
 	if (tableName != null && userName!=null){
-		socket.init("ws://10.128.2.252:4545/table",tableName,userName);
+		socket.init(tableName,userName);
 
 		let user = document.getElementById('user');
 		user.innerHTML = util.format(`用户:{0} `,userName);
 		let file = document.getElementById('tableName');
 		file.innerHTML = util.format(`表名:{0}`,tableName);
 
-		var hot = handstable.init(document.getElementById('table'))
+		var hot = handstable.init(document.getElementById('table'),tableName)
 	}else {
 		util.alert("参数错误")
 	}
-
-
 
 	window.onbeforeunload = function (e) {
 		e = e || window.event;

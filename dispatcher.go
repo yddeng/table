@@ -24,15 +24,22 @@ func Dispatcher(msg map[string]interface{}, session kendynet.StreamSession) {
 		switch cmd {
 		case "saveTable":
 			handleSaveTable(msg, sess)
-		case "rollback":
-			handleRollback(msg, sess)
 		case "lookHistory":
 			handleLookHistory(msg, sess)
+		case "backEditor":
+			handleBackEditor(msg, sess)
+		case "rollback":
+			handleRollback(msg, sess)
 		case "cellSelected":
-			handleCellSelected(msg, sess)
+			sess.Table.pushOtherUser(map[string]interface{}{
+				"cmd":      msg["cmd"],
+				"selected": msg["selected"],
+				"userName": sess.UserName,
+			}, sess.UserName)
 		default:
 			sess.Table.AddCmd(msg, sess.UserName)
 			doCmd(sess.Table.tmpFile, msg, false)
+			sess.Table.pushAllSession(msg)
 			sess.Table.pushAll()
 		}
 	}
@@ -52,7 +59,7 @@ func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
 	if !ok {
 		table, err = OpenTable(tableName)
 		if err != nil {
-			pushErr("openTable", err.Error(), NewSession(session, nil, userName))
+			pushErr(req["cmd"], err.Error(), NewSession(session, nil, userName))
 			return
 		}
 		tables[tableName] = table
@@ -74,25 +81,10 @@ func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
 	session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 }
 
-func handleCellSelected(req map[string]interface{}, session *Session) {
-	selected := req["selected"].([]interface{})
-	table := session.Table
-
-	b, _ := json.Marshal(map[string]interface{}{
-		"cmd":      "pushCellSelected",
-		"selected": selected,
-	})
-	for _, sess := range table.sessionMap {
-		if session.UserName != sess.UserName {
-			_ = sess.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
-		}
-	}
-}
-
 func handleSaveTable(req map[string]interface{}, session *Session) {
 	err := session.Table.SaveTable()
 	if err != nil {
-		pushErr("saveTable", err.Error(), session)
+		pushErr(req["cmd"], err.Error(), session)
 	}
 }
 
@@ -108,7 +100,7 @@ func handleLookHistory(req map[string]interface{}, session *Session) {
 		for i := table.version; i > ver; i-- {
 			ret, err := pgsql.LoadCmd(table.tableName, i)
 			if err != nil {
-				pushErr("lookHistory", err.Error(), session)
+				pushErr(req["cmd"], err.Error(), session)
 				return
 			}
 			rollbackCmds(retF, ret)
@@ -116,13 +108,13 @@ func handleLookHistory(req map[string]interface{}, session *Session) {
 	} else if ver > table.version {
 		_, err := pgsql.LoadCmd(table.tableName, ver)
 		if err != nil {
-			pushErr("lookHistory", "版本号错误", session)
+			pushErr(req["cmd"], "版本号错误", session)
 			return
 		}
 		for i := table.version; i <= ver; i++ {
 			ret, err := pgsql.LoadCmd(table.tableName, i)
 			if err != nil {
-				pushErr("lookHistory", err.Error(), session)
+				pushErr(req["cmd"], err.Error(), session)
 				return
 			}
 			doCmds(retF, ret)
@@ -131,66 +123,94 @@ func handleLookHistory(req map[string]interface{}, session *Session) {
 
 	retData, _ := getAll(retF)
 	b, _ := json.Marshal(map[string]interface{}{
-		"cmd":     "lookHistory",
+		"cmd":     req["cmd"],
 		"version": ver,
 		"data":    retData,
 	})
 	_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+}
 
+func handleBackEditor(req map[string]interface{}, session *Session) {
+	data, _ := getAll(session.Table.tmpFile)
+	b, _ := json.Marshal(map[string]interface{}{
+		"cmd":     req["cmd"],
+		"version": session.Table.version,
+		"data":    data,
+	})
+	_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 }
 
 func handleRollback(req map[string]interface{}, session *Session) {
-	now := int(req["now"].(float64))
-	ver := int(req["goto"].(float64))
+	ver := int(req["version"].(float64))
 	table := session.Table
 
-	if now != table.version {
-		pushErr("rollback", "版本号不一致，不能回退", session)
-		table.pushAll()
-		return
-	}
-
-	if len(table.sessionMap) > 1 {
-		pushErr("rollback", "多人操作，不能回退", session)
-		return
-	}
+	/*
+		if len(table.sessionMap) > 1 {
+			pushErr(req["cmd"], "多人操作，不能回退", session)
+			return
+		}
+	*/
 
 	if ver < table.version {
 		for i := table.version; i > ver; i-- {
 			ret, err := pgsql.LoadCmd(table.tableName, i)
 			if err != nil {
-				pushErr("rollback", err.Error(), session)
+				pushErr(req["cmd"], err.Error(), session)
 				return
 			}
-			rollbackCmds(table.tmpFile, ret)
+			rollbackCmds(table.xlFile, ret)
 		}
 	} else if ver > table.version {
 		_, err := pgsql.LoadCmd(table.tableName, ver)
 		if err != nil {
-			pushErr("rollback", "版本号错误", session)
+			pushErr(req["cmd"], "版本号错误", session)
 			return
 		}
 		for i := table.version; i <= ver; i++ {
 			ret, err := pgsql.LoadCmd(table.tableName, i)
 			if err != nil {
-				pushErr("rollback", err.Error(), session)
+				pushErr(req["cmd"], err.Error(), session)
 				return
 			}
-			doCmds(table.tmpFile, ret)
+			doCmds(table.xlFile, ret)
 		}
 	}
 
-	data, _ := getAll(table.tmpFile)
+	data, _ := getAll(table.xlFile)
+
+	// todo 保存版本指令
+	//cmdsStr, _ := json.Marshal(this.cmds)
+	//users, _ := json.Marshal(this.cmdUsers)
+	//v, err := pgsql.InsertCmd(this.tableName, string(users), string(cmdsStr))
+	//if err != nil {
+	//	return err
+	//}
+
+	// 更新数据库
+	b, _ := json.Marshal(data)
+	err := pgsql.UpdateTableData(table.tableName, table.version, string(b))
+	if err != nil {
+		pushErr(req["cmd"], err.Error(), session)
+
+		// 错误回退
+		tmpData, _ := getAll(table.tmpFile)
+		cloneFile(table.xlFile, tmpData)
+		return
+	}
+
+	// 当前表状态更改
+	tmpFile := newFile()
+	cloneFile(tmpFile, data)
+	table.tmpFile = tmpFile
+	table.cmds = []map[string]interface{}{}
 	table.version = ver
-	cloneFile(table.xlFile, data)
-	table.SaveTable()
-	b, _ := json.Marshal(map[string]interface{}{
+
+	// 同步给所有人
+	table.pushAllSession(map[string]interface{}{
 		"cmd":     "rollback",
 		"version": ver,
 		"data":    data,
 	})
-	_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
-
 }
 
 //## pushError 返回错误信息
@@ -199,7 +219,7 @@ func handleRollback(req map[string]interface{}, session *Session) {
 //doCmd:  string
 //errMsg: string
 //```
-func pushErr(cmd, msg string, session *Session) {
+func pushErr(cmd interface{}, msg string, session *Session) {
 	b, err := json.Marshal(map[string]interface{}{
 		"cmd":    "pushErr",
 		"doCmd":  cmd,
