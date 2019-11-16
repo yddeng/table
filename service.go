@@ -56,7 +56,7 @@ func Start(path string) {
 	http.HandleFunc("/createTable", HandleCreateTable)
 	http.HandleFunc("/deleteTable", HandleDeleteTable)
 	http.HandleFunc("/getAllTable", HandleGetAllTable)
-	http.HandleFunc("/downloadTable", HandleDownloadTable)
+	// http.HandleFunc("/downloadTable", HandleDownloadTable)
 	err = http.ListenAndServe(_conf.HttpAddr, nil)
 	if err != nil {
 		fmt.Println(err)

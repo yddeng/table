@@ -143,8 +143,7 @@ func HandleDownloadTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	xlFile := newFile()
-	cloneFile(xlFile, data)
+	xlFile := newFile(data)
 	fileName := fmt.Sprintf("%s.xlsx", tableName)
 	err = xlFile.SaveAs(fileName)
 	if err != nil {

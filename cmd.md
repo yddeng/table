@@ -140,3 +140,10 @@ cmd    : "rollback"
 version: int
 data   :  //[][]string
 ```
+
+数据库存入cmd
+```
+cmd    : "rollback"
+now    : int  // 当前版本
+goto   : int  // 回退到的版本
+```

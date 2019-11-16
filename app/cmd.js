@@ -90,7 +90,7 @@ dispatcher.handler["cellSelected"] = function(msg) {
     }
 };
 
-dispatcher.handler["pushSaveTable"] = function(msg) {
+dispatcher.handler["saveTable"] = function(msg) {
     if (handstable.status === StatusEnum.EDITOR) {
         handstable.setData(msg.data)
         handstable.setVersion(msg.version)

@@ -6,12 +6,6 @@ import (
 
 var Sheet = "Sheet1"
 
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 func doCmds(file *excelize.File, req []map[string]interface{}) {
 	for _, v := range req {
 		doCmd(file, v, false)
@@ -51,7 +45,7 @@ func insertRow(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 	} else {
 		err = file.InsertRow(Sheet, index)
 	}
-	checkErr(err)
+	CheckErr(err)
 }
 
 func removeRow(file *excelize.File, req map[string]interface{}, rollbcak bool) {
@@ -62,31 +56,31 @@ func removeRow(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 	} else {
 		err = file.RemoveRow(Sheet, index)
 	}
-	checkErr(err)
+	CheckErr(err)
 }
 
 func insertCol(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 	index := int(req["index"].(float64)) + 1
 	celHeader, err := excelize.ColumnNumberToName(index)
-	checkErr(err)
+	CheckErr(err)
 	if rollbcak {
 		err = file.RemoveCol(Sheet, celHeader)
 	} else {
 		err = file.InsertCol(Sheet, celHeader)
 	}
-	checkErr(err)
+	CheckErr(err)
 }
 
 func removeCol(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 	index := int(req["index"].(float64)) + 1
 	celHeader, err := excelize.ColumnNumberToName(index)
-	checkErr(err)
+	CheckErr(err)
 	if rollbcak {
 		err = file.InsertCol(Sheet, celHeader)
 	} else {
 		err = file.RemoveCol(Sheet, celHeader)
 	}
-	checkErr(err)
+	CheckErr(err)
 }
 
 func setCellValues(file *excelize.File, req map[string]interface{}, rollbcak bool) {
@@ -94,18 +88,18 @@ func setCellValues(file *excelize.File, req map[string]interface{}, rollbcak boo
 	for _, v := range cellValues {
 		item := v.(map[string]interface{})
 		cellName, err := excelize.CoordinatesToCellName(int(item["col"].(float64))+1, int(item["row"].(float64))+1)
-		checkErr(err)
+		CheckErr(err)
 		if rollbcak {
 			err = file.SetCellValue(Sheet, cellName, item["oldValue"])
 		} else {
 			err = file.SetCellValue(Sheet, cellName, item["newValue"])
 		}
-		checkErr(err)
+		CheckErr(err)
 	}
 }
 
 func getAll(file *excelize.File) [][]string {
 	data, err := file.GetRows(Sheet)
-	Must(data, err)
+	CheckErr(err)
 	return data
 }

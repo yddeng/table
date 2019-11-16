@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/sniperHW/kendynet/event"
-	"github.com/sniperHW/kendynet/message"
 	"github.com/yddeng/table/pgsql"
 	"sync"
 	"time"
@@ -41,10 +40,8 @@ func OpenTable(tableName string) (*Table, error) {
 		return nil, err
 	}
 	//fmt.Println(v, data, err)
-	xlFile := newFile()
-	tmpFile := newFile()
-	cloneFile(xlFile, data)
-	cloneFile(tmpFile, data)
+	xlFile := newFile(data)
+	tmpFile := newFile(data)
 	return &Table{
 		tableName:  tableName,
 		version:    v,
@@ -74,8 +71,7 @@ func (this *Table) SaveTable() error {
 		this.cmdUsers = []string{}
 
 		// 保存最新数据
-		data, _ := getAll(this.xlFile)
-		b, _ := json.Marshal(data)
+		b := MustJsonMarshal(getAll(this.xlFile))
 		err = pgsql.UpdateTableData(this.tableName, this.version, string(b))
 		if err != nil {
 			return err
@@ -84,23 +80,19 @@ func (this *Table) SaveTable() error {
 	return nil
 }
 
-func newFile() *excelize.File {
+func newFile(data [][]string) *excelize.File {
 	file := excelize.NewFile()
 	idx := file.NewSheet(Sheet)
 	file.SetActiveSheet(idx)
-	return file
-}
 
-func cloneFile(file *excelize.File, data [][]string) {
 	for row, v := range data {
 		for col, value := range v {
 			cellName, err := excelize.CoordinatesToCellName(col+1, row+1)
-			checkErr(err)
-			if err == nil {
-				_ = file.SetCellValue("Sheet1", cellName, value)
-			}
+			CheckErr(err)
+			_ = file.SetCellValue(Sheet, cellName, value)
 		}
 	}
+	return file
 }
 
 func (this *Table) AddCmd(cmd map[string]interface{}, userName string) {
@@ -127,14 +119,14 @@ func (this *Table) RemoveSession(session *Session) {
 
 // 转发命令
 func (this *Table) pushAllSession(msg map[string]interface{}) {
-	b, _ := json.Marshal(msg)
+	b := MustJsonMarshal(msg)
 	for _, session := range this.sessionMap {
 		session.Send(msg["cmd"].(string), b)
 	}
 }
 
 func (this *Table) pushOtherUser(msg map[string]interface{}, userName string) {
-	b, _ := json.Marshal(msg)
+	b := MustJsonMarshal(msg)
 	for _, session := range this.sessionMap {
 		if session.UserName != userName {
 			session.Send(msg["cmd"].(string), b)
