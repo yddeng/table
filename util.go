@@ -6,3 +6,10 @@ func Min(a, b int) (int, int) {
 	}
 	return a, b
 }
+
+func Must(msg interface{}, err error) interface{} {
+	if err != nil {
+		panic(err)
+	}
+	return msg
+}

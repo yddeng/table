@@ -104,6 +104,8 @@ func setCellValues(file *excelize.File, req map[string]interface{}, rollbcak boo
 	}
 }
 
-func getAll(file *excelize.File) ([][]string, error) {
-	return file.GetRows(Sheet)
+func getAll(file *excelize.File) [][]string {
+	data, err := file.GetRows(Sheet)
+	Must(data, err)
+	return data
 }

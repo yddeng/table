@@ -8,50 +8,36 @@ import (
 	"github.com/yddeng/table/pgsql"
 )
 
+var dispatcher map[string]func(msg map[string]interface{}, session *Session)
+
 func Dispatcher(msg map[string]interface{}, session kendynet.StreamSession) {
-	cmd := msg["cmd"].(string)
 	fmt.Println("Dispatcher", msg)
 
+	cmdI := msg["cmd"]
+	if cmdI == nil {
+		fmt.Println("no cmd")
+		return
+	}
+
+	cmd := cmdI.(string)
 	if cmd == "openTable" {
 		onOpenTable(msg, session)
 	} else {
-		sess := checkSession(session)
+		sess := sessionMap[session.RemoteAddr().String()]
 		if sess == nil {
-			pushErr(cmd, "Session is nil", NewSession(session, nil, ""))
+			pushErr(cmdI, "no session", NewSession(session, nil, ""))
 			return
 		}
-
-		switch cmd {
-		case "saveTable":
-			handleSaveTable(msg, sess)
-		case "lookHistory":
-			handleLookHistory(msg, sess)
-		case "backEditor":
-			handleBackEditor(msg, sess)
-		case "rollback":
-			handleRollback(msg, sess)
-		case "cellSelected":
-			sess.Table.pushOtherUser(map[string]interface{}{
-				"cmd":      msg["cmd"],
-				"selected": msg["selected"],
-				"userName": sess.UserName,
-			}, sess.UserName)
-		default:
-			sess.Table.AddCmd(msg, sess.UserName)
-			doCmd(sess.Table.tmpFile, msg, false)
-			sess.Table.pushAllSession(msg)
-			sess.Table.pushAll()
+		handler, ok := dispatcher[cmd]
+		if ok {
+			handler(msg, sess)
+		} else {
+			panic(fmt.Sprintf("cmd:%s no register", cmd))
 		}
 	}
 }
 
-func checkSession(sess kendynet.StreamSession) *Session {
-	return sessionMap[sess.RemoteAddr().String()]
-}
-
 func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
-	fmt.Println("handleOpenTable", req)
-
 	var err error
 	tableName := req["tableName"].(string)
 	userName := req["userName"].(string)
@@ -66,25 +52,75 @@ func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
 	}
 
 	sess := NewSession(session, table, userName)
-	sessionMap[sess.RemoteAddr().String()] = sess
+	sessionMap[sess.RemoteAddr()] = sess
 	table.AddSession(sess)
 
-	resp := map[string]interface{}{
+	b := Must(json.Marshal(map[string]interface{}{
 		"cmd":       "openTable",
 		"tableName": tableName,
 		"userName":  userName,
 		"version":   table.version,
-	}
-	data, _ := getAll(table.tmpFile)
-	resp["data"] = data
-	b, _ := json.Marshal(resp)
-	session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+		"data":      getAll(table.tmpFile),
+	})).([]byte)
+	_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+}
+
+func handleCellSelected(req map[string]interface{}, session *Session) {
+	session.Table.pushOtherUser(map[string]interface{}{
+		"cmd":      req["cmd"],
+		"selected": req["selected"],
+		"userName": session.UserName,
+	}, session.UserName)
+}
+
+func handleInsertRow(req map[string]interface{}, session *Session) {
+	session.Table.AddCmd(req, session.UserName)
+	doCmd(session.Table.tmpFile, req, false)
+	session.Table.pushAllSession(req)
+	session.Table.pushAll()
+}
+
+func handleRemoveRow(req map[string]interface{}, session *Session) {
+	session.Table.AddCmd(req, session.UserName)
+	doCmd(session.Table.tmpFile, req, false)
+	session.Table.pushAllSession(req)
+	session.Table.pushAll()
+}
+
+func handleInsertCol(req map[string]interface{}, session *Session) {
+	session.Table.AddCmd(req, session.UserName)
+	doCmd(session.Table.tmpFile, req, false)
+	session.Table.pushAllSession(req)
+	session.Table.pushAll()
+}
+
+func handleRemoveCol(req map[string]interface{}, session *Session) {
+	session.Table.AddCmd(req, session.UserName)
+	doCmd(session.Table.tmpFile, req, false)
+	session.Table.pushAllSession(req)
+	session.Table.pushAll()
+}
+
+func handleSetCellValues(req map[string]interface{}, session *Session) {
+	session.Table.AddCmd(req, session.UserName)
+	doCmd(session.Table.tmpFile, req, false)
+	session.Table.pushAllSession(req)
+	session.Table.pushAll()
 }
 
 func handleSaveTable(req map[string]interface{}, session *Session) {
 	err := session.Table.SaveTable()
 	if err != nil {
 		pushErr(req["cmd"], err.Error(), session)
+		return
+	}
+	b, _ := json.Marshal(map[string]interface{}{
+		"cmd":     req["cmd"],
+		"version": session.Table.version,
+		"data":    getAll(session.Table.xlFile),
+	})
+	for _, session := range this.sessionMap {
+		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 	}
 }
 
@@ -92,7 +128,7 @@ func handleLookHistory(req map[string]interface{}, session *Session) {
 	ver := int(req["version"].(float64))
 	table := session.Table
 
-	data, _ := getAll(table.xlFile)
+	data := getAll(table.xlFile)
 	retF := newFile()
 	cloneFile(retF, data)
 
@@ -121,13 +157,12 @@ func handleLookHistory(req map[string]interface{}, session *Session) {
 		}
 	}
 
-	retData, _ := getAll(retF)
 	b, _ := json.Marshal(map[string]interface{}{
 		"cmd":     req["cmd"],
 		"version": ver,
-		"data":    retData,
+		"data":    getAll(retF),
 	})
-	_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+	session.Send(req["cmd"].(string), b)
 }
 
 func handleBackEditor(req map[string]interface{}, session *Session) {
@@ -137,7 +172,7 @@ func handleBackEditor(req map[string]interface{}, session *Session) {
 		"version": session.Table.version,
 		"data":    data,
 	})
-	_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+	session.Send(req["cmd"].(string), b)
 }
 
 func handleRollback(req map[string]interface{}, session *Session) {
@@ -220,12 +255,32 @@ func handleRollback(req map[string]interface{}, session *Session) {
 //errMsg: string
 //```
 func pushErr(cmd interface{}, msg string, session *Session) {
+	fmt.Println("pushErr", msg)
 	b, err := json.Marshal(map[string]interface{}{
 		"cmd":    "pushErr",
 		"doCmd":  cmd,
 		"errMsg": msg,
 	})
 	if err == nil {
-		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+		session.Send("pushErr", b)
 	}
+}
+
+func init() {
+	dispatcher = map[string]func(msg map[string]interface{}, session *Session){}
+	// 只做转发
+	dispatcher["cellSelected"] = handleCellSelected
+	// cmd，操作文件命令
+	dispatcher["insertRow"] = handleInsertRow
+	dispatcher["removeRow"] = handleRemoveRow
+	dispatcher["insertCol"] = handleInsertCol
+	dispatcher["removeCol"] = handleRemoveCol
+	dispatcher["setCellValues"] = handleSetCellValues
+	// 保存，将所有cmd指令存库，生成一条版本记录
+	dispatcher["saveTable"] = handleSaveTable
+	// 查看历史版本，返回编辑状态。消息转发过滤
+	dispatcher["lookHistory"] = handleLookHistory
+	dispatcher["backEditor"] = handleBackEditor
+	// 回滚版本，单独生成一条版本记录
+	dispatcher["rollback"] = handleRollback
 }

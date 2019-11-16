@@ -11,21 +11,22 @@ import (
 	"time"
 )
 
-type Table struct {
-	tableName  string
-	version    int                      // 当前版本号
-	tmpFile    *excelize.File           // 中间文件，同步给用户
-	xlFile     *excelize.File           // 指令计算的结果文件，最终落地到数据库
-	sessionMap map[string]*Session      // session, for remoteAddr
-	cmds       []map[string]interface{} // 指令集合
-	cmdUsers   []string
-}
-
 var (
 	once       = sync.Once{}
 	eventQueue = event.NewEventQueue()
 	tables     = map[string]*Table{}
 )
+
+type Table struct {
+	tableName  string
+	version    int                 // 当前版本号
+	tmpFile    *excelize.File      // 中间文件，同步给用户
+	xlFile     *excelize.File      // 指令计算的结果文件，最终落地到数据库
+	sessionMap map[string]*Session // session, for remoteAddr
+
+	cmds     []map[string]interface{} // 当前cmd指令的集合
+	cmdUsers []string                 // 产生当前指令的用户
+}
 
 func PostTask(task func()) {
 	_ = eventQueue.Post(task)
@@ -70,6 +71,7 @@ func (this *Table) SaveTable() error {
 		}
 		this.version = v
 		this.cmds = []map[string]interface{}{}
+		this.cmdUsers = []string{}
 
 		// 保存最新数据
 		data, _ := getAll(this.xlFile)
@@ -78,8 +80,6 @@ func (this *Table) SaveTable() error {
 		if err != nil {
 			return err
 		}
-
-		this.pushSaveTable()
 	}
 	return nil
 }
@@ -113,15 +113,15 @@ func (this *Table) AddCmd(cmd map[string]interface{}, userName string) {
 	this.cmdUsers = append(this.cmdUsers, userName)
 }
 
-func (ef *Table) AddSession(session *Session) {
-	if _, ok := ef.sessionMap[session.RemoteAddr().String()]; !ok {
-		ef.sessionMap[session.RemoteAddr().String()] = session
+func (this *Table) AddSession(session *Session) {
+	if _, ok := this.sessionMap[session.RemoteAddr()]; !ok {
+		this.sessionMap[session.RemoteAddr()] = session
 	}
 }
 
-func (ef *Table) RemoveSession(session *Session) {
-	if _, ok := ef.sessionMap[session.RemoteAddr().String()]; ok {
-		delete(ef.sessionMap, session.RemoteAddr().String())
+func (this *Table) RemoveSession(session *Session) {
+	if _, ok := this.sessionMap[session.RemoteAddr()]; ok {
+		delete(this.sessionMap, session.RemoteAddr())
 	}
 }
 
@@ -129,7 +129,7 @@ func (ef *Table) RemoveSession(session *Session) {
 func (this *Table) pushAllSession(msg map[string]interface{}) {
 	b, _ := json.Marshal(msg)
 	for _, session := range this.sessionMap {
-		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+		session.Send(msg["cmd"].(string), b)
 	}
 }
 
@@ -137,35 +137,20 @@ func (this *Table) pushOtherUser(msg map[string]interface{}, userName string) {
 	b, _ := json.Marshal(msg)
 	for _, session := range this.sessionMap {
 		if session.UserName != userName {
-			_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
+			session.Send(msg["cmd"].(string), b)
 		}
-	}
-}
-
-// pushSaveTable 保存表后推送
-func (this *Table) pushSaveTable() {
-	data, _ := getAll(this.xlFile)
-	b, _ := json.Marshal(map[string]interface{}{
-		"cmd":     "pushSaveTable",
-		"version": this.version,
-		"data":    data,
-	})
-	for _, session := range this.sessionMap {
-		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 	}
 }
 
 // pushAll 推送所有数据
 func (this *Table) pushAll() {
-	data, _ := getAll(this.tmpFile)
-	b, _ := json.Marshal(map[string]interface{}{
+	data := getAll(this.tmpFile)
+	resp := map[string]interface{}{
 		"cmd":     "pushAll",
 		"version": this.version,
 		"data":    data,
-	})
-	for _, session := range this.sessionMap {
-		_ = session.SendMessage(message.NewWSMessage(message.WSTextMessage, b))
 	}
+	this.pushAllSession(resp)
 }
 
 func Loop() {
@@ -181,7 +166,7 @@ func Loop() {
 		PostTask(func() {
 			for _, file := range tables {
 				if len(file.sessionMap) == 0 {
-					file.SaveTable()
+					_ = file.SaveTable()
 					fmt.Println("delete Table", file.tableName)
 					delete(tables, file.tableName)
 				}

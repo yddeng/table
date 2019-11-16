@@ -16,14 +16,6 @@ resp ok= 1/0
      tables = []{tableName:string,version:int}
         
 #websocket
-
-## pushSaveTable 保存表后推送
-```
-cmd : "pushSaveTable"
-version : int
-data:  // [][]string
-```
-
 ## pushAll 推送所有数据
 ```
 cmd : "pushAll"
@@ -96,9 +88,16 @@ userName: string,
 selected: {row:int, col:int, row2:int, col2:int},起始格到结束格 
 ```
 
-## 保存表，tos
+## 保存表，
+tos
 ```
 cmd : "saveTable"
+```
+toc
+```
+cmd : "saveTable"
+version : int
+data:  // [][]string
 ```
 
 ## 查看历史版
