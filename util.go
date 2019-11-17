@@ -9,24 +9,20 @@ func Min(a, b int) (int, int) {
 	return a, b
 }
 
-func Must(msg interface{}, err error) interface{} {
-	if err != nil {
-		panic(err)
-	}
-	return msg
-}
-
 func CheckErr(err error) {
 	if err != nil {
 		panic(err)
 	}
 }
 
+func Must(msg interface{}, err error) interface{} {
+	CheckErr(err)
+	return msg
+}
+
 func MustJsonMarshal(v interface{}) []byte {
 	b, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
-	}
+	CheckErr(err)
 	return b
 }
 

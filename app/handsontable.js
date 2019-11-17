@@ -174,7 +174,9 @@ handstable.new = function(data){
         },
         afterSelectionEnd: function(row, col, row2, col2) {
             //console.log("afterSelectionEnd",row,col,row2,col2)
-            cellSelected({row:row, col:col, row2:row2, col2:col2})
+            //cellSelected({row:row, col:col, row2:row2, col2:col2})
+            handstable.setSelected("名字",{row:row, col:col, row2:row2, col2:col2})
+            //handstable.setCellData({col:1,row:1,oldValue:"",newValue:"dd"})
         },
     });
     handstable.customBordersPlugin = handstable.table.getPlugin('customBorders');
@@ -216,8 +218,18 @@ handstable.setSelected = function(name,selected){
     }
 
     let newCells = [[selected.row,selected.col,selected.row2,selected.col2]];
+    //let range = {from: {row: selected.row, col:selected.col},to: {row: selected.row2, col:selected.col2}};
+    console.log(handstable.table.getSelectedRange())
+    console.log(newCells)
     handstable.customBordersPlugin.setBorders(newCells,sty);
     handstable.selected[name] = newCells;
+
+    let metaRow = handstable.table.getCellMetaAtRow(selected.row)
+    console.log(metaRow)
+    handstable.table.setCellMeta(selected.row,selected.col,"width","300px")
+    let meta = handstable.table.getCellMeta(selected.row,selected.col)
+    console.log(meta)
+    handstable.table.setDataAtCell(selected.row,selected.col,"sss")
 };
 
 handstable.insertRow = function(row){
@@ -233,8 +245,17 @@ handstable.removeCol = function(row){
     handstable.table.alter("remove_col",row)
 };
 
+handstable.setCellData = function(msg){
+    handstable.table.setDataAtCell(msg.row,msg.col,msg.newValue)
+};
+
 handstable.pos2Axis = function(col,row){
     return  util.format("{0}{1}",handstable.table.getColHeader(col),this.table.getRowHeader(row));
+};
+
+
+function downCsv() {
+    handstable.exportPlugin.downloadFile('csv', {filename: handstable.tableName});
 };
 
 function downExcel() {

@@ -7,14 +7,62 @@
 	<script src="./handsontable.full.js"></script>
 	<script src="./websocket.js"></script>
 	<script src="./handsontable.js"></script>
-	<script src="./cmd.js"></script>
+	<script src="./dispatcher.js"></script>
 	<script src="./util.js"></script>
-
 	<link rel="stylesheet" media="screen" href="./css/handsontable.full.css">
 	<style>
-		.curRow{
-			color: red;
+		#editor-header{
+			margin-bottom:100px ;
+			z-index: 999;
+
+			position: relative;
 		}
+		#nav{
+			height: 35px;
+			width: 100%;
+			margin: 0 auto;
+			background: #8eb0e7;
+		}
+		.nav-li1{
+			list-style-type:none;
+			float: left;
+			width: 100px;
+			/*border: 1px solid #eee;*/
+			position: relative;
+			text-align: center;
+			}
+		.nav-li1:hover {
+			background-color: deepPink;
+		}
+		a{
+			text-decoration: none;
+			display: block;
+			line-height: 35px;
+			color:black;
+		}
+		.nav-li1:hover .nav-ul2{
+			display: block;
+		}
+		.nav-ul2{
+			display: none;
+			position: absolute;
+			left: 0px;
+			top: 35px;
+		}
+		.nav-li2{
+			list-style-type:none;
+			float: none;
+			background: #8eb0e7;
+			width: 200px;
+			text-align: left;
+		}
+	#table{
+		/*margin-top: 100px;*/
+		z-index: 1 !important;
+		position: absolute;
+		left: 0px;
+		top:100px;
+	}
 	</style>
 </head>
 <body>
@@ -26,6 +74,26 @@
 	<button onclick="backEditor()">回到编辑</button>
 	<input id="rbv" style="width: 20px"/><button onclick="rollback()">回退版本</button>
 	<button onclick="downExcel()">导出Excel</button> <button onclick="showData()">显示数据</button>
+	<div id="editor-header">
+		<div id=""></div>
+		<div id="nav">
+				<ul class="nav-ul1">
+					<li class="nav-li1"><a href="#">一级导航</a></li>
+					<li class="nav-li1"><a href="#">文件导出</a>
+						<ul class="nav-ul2">
+							<li class="nav-li2"><a href="#" onclick="downCsv()">导出为csv文件(.csv)</a></li>
+							<li class="nav-li2"><a href="#">导出为excel表格(.xlsx)</a></li>
+						</ul></li>
+					<li class="nav-li1"><a href="#">版本记录</a>
+						<ul class="nav-ul2">
+							<li class="nav-li2"><a href="#">sd</a></li>
+							<li class="nav-li2"><a href="#">sddd</a></li>
+						</ul>
+					</li>
+					<li class="nav-li1"><a href="#">关于</a></li>
+				</ul>
+		</div>
+	</div>
 </div>
 <div id="table"></div>
 <script>
@@ -33,8 +101,8 @@
 	let tableName = util.getUrlParam("tableName");
 	let userName = util.getUrlParam("userName");
 	console.log(tableName,userName);
-	if (tableName != null && userName!=null){
-		socket.init(tableName,userName);
+	//if (tableName != null && userName!=null){
+		//socket.init(tableName,userName);
 
 		let user = document.getElementById('user');
 		user.innerHTML = util.format(`用户:{0} `,userName);
@@ -42,9 +110,10 @@
 		file.innerHTML = util.format(`表名:{0}`,tableName);
 
 		var hot = handstable.init(document.getElementById('table'),tableName)
-	}else {
-		util.alert("参数错误")
-	}
+		handstable.new([])
+	//}else {
+	//	util.alert("参数错误")
+	//}
 
 	window.onbeforeunload = function (e) {
 		e = e || window.event;
@@ -55,6 +124,8 @@
 		// Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
 		return '关闭提示';
 	};
+
+
 </script>
 </body>
 </html>

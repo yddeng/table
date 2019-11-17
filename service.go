@@ -27,7 +27,7 @@ func Start(path string) {
 						OnClose(sess, reason)
 					})
 				})
-				session.Start(func(event *kendynet.Event) {
+				_ = session.Start(func(event *kendynet.Event) {
 					if event.EventType == kendynet.EventTypeError {
 						event.Session.Close(event.Data.(error).Error(), 0)
 					} else {
@@ -49,7 +49,7 @@ func Start(path string) {
 		panic(fmt.Sprintf("NewTcpServer failed %s\n", err))
 	}
 
-	fmt.Printf("http start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)
+	fmt.Printf("wbSocket start on %s\n", _conf.WSAddr)
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(_conf.LoadDir))))
 
 	// http handler
@@ -57,6 +57,7 @@ func Start(path string) {
 	http.HandleFunc("/deleteTable", HandleDeleteTable)
 	http.HandleFunc("/getAllTable", HandleGetAllTable)
 	// http.HandleFunc("/downloadTable", HandleDownloadTable)
+	fmt.Printf("http start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)
 	err = http.ListenAndServe(_conf.HttpAddr, nil)
 	if err != nil {
 		fmt.Println(err)

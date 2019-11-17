@@ -79,6 +79,13 @@ dispatcher.handler["pushErr"] = function(msg) {
     util.alert(util.format("cmd:{0}\nerrMsg:{1}",msg.doCmd,msg.errMsg))
 };
 
+dispatcher.handler["pushAll"] = function(msg) {
+    if (handstable.status === StatusEnum.EDITOR) {
+        handstable.setData(msg.data);
+        handstable.setVersion(msg.version)
+    }
+};
+
 dispatcher.handler["openTable"] = function(msg) {
     handstable.new(msg.data)
     handstable.setVersion(msg.version)
@@ -119,12 +126,7 @@ dispatcher.handler["removeCol"] = function(msg) {
     }
 };
 
-dispatcher.handler["pushAll"] = function(msg) {
-    if (handstable.status === StatusEnum.EDITOR) {
-        handstable.setData(msg.data);
-        handstable.setVersion(msg.version)
-    }
-};
+
 
 dispatcher.handler["lookHistory"] = function(msg) {
     handstable.setVersion(msg.version);

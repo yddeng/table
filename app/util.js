@@ -38,7 +38,8 @@ util.getUrlParam =  function(name) {
 
 util.getColor = function(idx) {
     let colr = util.colors[idx%util.colors.length];
-    return {right:{width: 2,color:colr},left:{width: 2,color:colr},top:{width: 2,color:colr},bottom:{width: 2,color:colr}};
+    return {right:{width: 2,color:colr},left:{width: 2,color:colr},
+        top:{width: 2,color:colr,text:"sssss"},bottom:{width: 2,color:colr}};
 }
 
 //弹出一个输入框，输入一段文字，可以提交
