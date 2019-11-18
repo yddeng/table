@@ -12,7 +12,7 @@ func CreateTableCmd(tableName string) error {
 	sql := `
     CREATE TABLE "public"."` + tableName + `_cmd" (
         "version"   SERIAL primary key ,
-        "username"  varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
+        "users"     varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
         "date"      varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
         "cmds"      varchar(65535) COLLATE "pg_catalog"."default" NOT NULL
     );`
@@ -27,7 +27,7 @@ func CreateTableCmd(tableName string) error {
 // 插入操作
 func InsertCmd(tableName, userName, cmd string) (int, error) {
 	sqlStr := `
-INSERT INTO %s_cmd (username,date,cmds)  
+INSERT INTO %s_cmd (users,date,cmds)  
 VALUES ('%s','%s','%s')
 RETURNING version;`
 
@@ -39,22 +39,24 @@ RETURNING version;`
 	return id, err
 }
 
-func LoadCmd(tableName string, v int) ([]map[string]interface{}, error) {
+func LoadCmd(tableName string, v int) ([]string, string, []map[string]interface{}, error) {
 	sqlStr := `
-SELECT cmds FROM %s_cmd 
+SELECT users,date,cmds FROM %s_cmd 
 WHERE version=%d;`
 
 	sqlStatement := fmt.Sprintf(sqlStr, tableName, v)
-	var cmdStr string
+	var userStr, dateStr, cmdStr string
 	row := dbConn.QueryRow(sqlStatement)
-	err := row.Scan(&cmdStr)
+	err := row.Scan(&userStr, &dateStr, &cmdStr)
 	if err != nil {
-		return nil, err
+		return nil, "", nil, err
 	}
 
+	var users []string
+	_ = json.Unmarshal(([]byte)(userStr), &users)
 	var cmds []map[string]interface{}
 	err = json.Unmarshal(([]byte)(cmdStr), &cmds)
-	return cmds, err
+	return users, dateStr, cmds, nil
 }
 
 func Insert(tableName string, fields map[string]interface{}) error {
@@ -79,4 +81,12 @@ VALUES (%s);`
 	}
 	_, err = smt.Exec(args...)
 	return err
+}
+
+func Select(tableName string, id interface{}) (map[string]interface{}, error) {
+	sqlStr := `
+SELECT * FROM %s
+WHERE version=%d;`
+	fmt.Println(sqlStr)
+	return nil, nil
 }

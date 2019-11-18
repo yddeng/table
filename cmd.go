@@ -2,6 +2,7 @@ package table
 
 import (
 	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/yddeng/table/pgsql"
 )
 
 var Sheet = "Sheet1"
@@ -20,7 +21,7 @@ func rollbackCmds(file *excelize.File, req []map[string]interface{}) {
 
 func doCmd(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 	cmd := req["cmd"].(string)
-	//fmt.Println("doCmd", cmd, rollbcak)
+	//fmt.Println("doCmd", cmd, req, rollbcak)
 	switch cmd {
 	case "insertRow":
 		insertRow(file, req, rollbcak)
@@ -32,6 +33,8 @@ func doCmd(file *excelize.File, req map[string]interface{}, rollbcak bool) {
 		removeCol(file, req, rollbcak)
 	case "setCellValues":
 		setCellValues(file, req, rollbcak)
+	case "rollback":
+		rollback(file, req, rollbcak)
 	default:
 		panic("cmd defined")
 	}
@@ -96,6 +99,21 @@ func setCellValues(file *excelize.File, req map[string]interface{}, rollbcak boo
 		}
 		CheckErr(err)
 	}
+}
+
+func rollback(file *excelize.File, req map[string]interface{}, rollbcak bool) {
+	now := int(req["now"].(float64))
+	to := int(req["goto"].(float64))
+	tableName := req["tableName"].(string)
+
+	// todo bug，多次回退后，逻辑处理错误
+	for i := to + 1; i <= now; i++ {
+		_, _, ret, err := pgsql.LoadCmd(tableName, i)
+		//fmt.Println(ret)
+		CheckErr(err)
+		doCmds(file, ret)
+	}
+
 }
 
 func getAll(file *excelize.File) [][]string {

@@ -3,117 +3,213 @@
 <head>
 	<meta charset='utf-8'>
 	<title> ExcelEditor</title>
-	<script data-jsfiddle="common" src="./jquery.min.js"></script>
-	<script src="./handsontable.full.js"></script>
+	<script src="dist/jquery.min.js"></script>
+	<script src="dist/handsontable.full.js"></script>
+	<script src="dist/xlsx.full.min.js"></script>
 	<script src="./websocket.js"></script>
 	<script src="./handsontable.js"></script>
 	<script src="./dispatcher.js"></script>
 	<script src="./util.js"></script>
 	<link rel="stylesheet" media="screen" href="./css/handsontable.full.css">
 	<style>
-		#editor-header{
-			margin-bottom:100px ;
-			z-index: 999;
-
-			position: relative;
-		}
-		#nav{
-			height: 35px;
-			width: 100%;
+		body{
 			margin: 0 auto;
-			background: #8eb0e7;
+		}
+		#editor-header{
+			z-index: 1100;
+			position: relative;
+			background: #F2F3F4 ;
+			height: 60px;
+			width: 100%;
+		}
+		#header_top{
+			height: 10px;
+		}
+		#header_bottom{
+			height: 50px;
+			width: 100%;
+		}
+		#title{
+			height: 35px;
+			width: 30%;
+			float: left;
+		}
+		#editor-text{
+			height: 35px;
+			width: 40%;
+			float: left;
+		}
+		#menu{
+			height: 35px;
+			width: 30%;
+			float: left;
 		}
 		.nav-li1{
 			list-style-type:none;
 			float: left;
-			width: 100px;
-			/*border: 1px solid #eee;*/
+			width: 80px;
 			position: relative;
 			text-align: center;
+			line-height: 35px;
 			}
 		.nav-li1:hover {
-			background-color: deepPink;
-		}
-		a{
-			text-decoration: none;
-			display: block;
-			line-height: 35px;
-			color:black;
+			background-color: #E5E7E9;
+			cursor: pointer;
 		}
 		.nav-li1:hover .nav-ul2{
 			display: block;
 		}
 		.nav-ul2{
 			display: none;
-			position: absolute;
-			left: 0px;
-			top: 35px;
 		}
 		.nav-li2{
 			list-style-type:none;
 			float: none;
-			background: #8eb0e7;
-			width: 200px;
+			background: #F8F9F9;
+			width: 150px;
 			text-align: left;
+			line-height: 35px;
 		}
-	#table{
-		/*margin-top: 100px;*/
-		z-index: 1 !important;
-		position: absolute;
-		left: 0px;
-		top:100px;
-	}
+		.nav-li2:hover {
+			background-color: #E5E7E9;
+			cursor: pointer;
+		}
+		#table{
+			position: absolute;
+		}
+
+		/* 历史版本 */
+		.history-div{
+			display: none;
+			position: absolute;
+			top: 60px;
+			right: 0px;
+			width: 200px;
+			height: 80%;
+			padding: 10px;
+			border: 1px solid #F2F3F4 ;
+			background-color: rgba(251,252,252,1.0) ;
+			z-index: 1002;
+			overflow: auto;
+		}
+		.history-div-nav-li:hover{
+			background-color: #E5E7E9;
+			cursor: pointer;
+		}
+		.rbBtn{
+			font-size: 12px;
+			margin-left: 100px
+		}
+		.rbBtn:hover{
+			color:#3498DB;
+		}
+		/* 屏蔽 */
+		.black_overlay{
+			display: none;
+			position: absolute;
+			top: 60px;
+			left: 0%;
+			width: 100%;
+			height: 90%;
+			background-color:rgba(251,252,252,0.7) ;
+			z-index:1001;
+			-moz-opacity: 0.8;
+			opacity:.80;
+			filter: alpha(opacity=88);
+		}
+		/* 公告 */
+		.notion {
+			display: none;
+			position: absolute;
+			top: 15%;
+			left: 20%;
+			width: 60%;
+			height: 60%;
+			padding: 20px;
+			border: 1px solid #A6ACAF;
+			background-color: white;
+			z-index: 1002;
+			overflow: auto;
+		}
 	</style>
 </head>
 <body>
-<div style="height: 50px;width: 100%">
-	<span id="user"></span><span id="tableName"></span>
-	<button onclick="saveTable()">保存</button>
-	<span>状态：<i id="status"></i>  </span>
-	<span>当前版本：<i id="n_version"></i>  </span><input id="lookv" style="width: 20px"/><button onclick="lookHistory()">查看版本</button>
-	<button onclick="backEditor()">回到编辑</button>
-	<input id="rbv" style="width: 20px"/><button onclick="rollback()">回退版本</button>
-	<button onclick="downExcel()">导出Excel</button> <button onclick="showData()">显示数据</button>
-	<div id="editor-header">
-		<div id=""></div>
-		<div id="nav">
-				<ul class="nav-ul1">
-					<li class="nav-li1"><a href="#">一级导航</a></li>
-					<li class="nav-li1"><a href="#">文件导出</a>
-						<ul class="nav-ul2">
-							<li class="nav-li2"><a href="#" onclick="downCsv()">导出为csv文件(.csv)</a></li>
-							<li class="nav-li2"><a href="#">导出为excel表格(.xlsx)</a></li>
-						</ul></li>
-					<li class="nav-li1"><a href="#">版本记录</a>
-						<ul class="nav-ul2">
-							<li class="nav-li2"><a href="#">sd</a></li>
-							<li class="nav-li2"><a href="#">sddd</a></li>
-						</ul>
-					</li>
-					<li class="nav-li1"><a href="#">关于</a></li>
-				</ul>
+<div id="history-div" class="history-div">
+	<a href = "javascript:void(0)" style="margin-left: 150px" onclick = "document.getElementById('history-div').style.display='none';backEditor()">关闭</a>
+	<hr>
+	<div id="history-div-nav"></div>
+</div>
+<div id="fade" class="black_overlay"></div>
+<div id="notion" class="notion">
+	<a href = "javascript:void(0)" style="margin-left: 95%" onclick = "document.getElementById('notion').style.display='none';">关闭</a>
+	<hr>
+	<p>### 注意事项</p>
+	<p>1.默认冻结前三行，手动冻结指定列。</p>
+	<p>2.行列的拖拽，仅在前端展示，不影响实际行列数据。</p>
+	<p>3.当涉及多人修改同一单元格时，最后的编辑将覆盖之前的编辑数据。</p>
+	<p>4.文件保存，任意一人点击"保存"将保存从上版本到当前所有人操作指令，生成一条版本记录。数据有修改但无人保存，将在所有客户端关闭时自动保存。</p>
+	<p>5.在浏览历史版本时，不能修改数据。只有处于编辑状态下才能修改数据。</p>
+	<p>6.回退版本时，将丢弃当前所有人的编辑指令、数据，实际数据回退到对应版本，强行同步给所有人。</p>
+	<p>### 功能支持</p>
+	<p>1.实时显示他人当前编辑的单元格。以不同颜色区分。</p>
+	<p>2.查看历史版本，仅浏览数据，实际数据不回退，可导出该浏览版本数据。</p>
+	<p>3.版本回退，可回退到之前任意版本，实际数据将回退到该版本。</p>
+	<p>4.导出文件，以当前前端展示的数据导出文件，格式支持 csv、xlsx。</p>
+</div>
+<div id="editor-header">
+	<div id="header_top">
+	</div>
+	<div id="header_bottom">
+		<div id="title">
+			<span style="line-height: 35px;color: #626567;font-weight: bolder;font-size: 20px">
+				表名:&nbsp;<span id="tableName" ></span>&nbsp;&nbsp;
+				用户名:&nbsp;<span id="user"></span>
+			</span>
+		</div>
+		<div id="editor-text">
+			<span style="line-height: 35px;color: #626567;font-weight: bolder">
+				状态:&nbsp;<span id="status" ></span>&nbsp;&nbsp;
+				版号:&nbsp;<span id="n_version"></span>
+			</span>
+		</div>
+		<div id="menu">
+			<div class="nav-li1" onclick = "document.getElementById('notion').style.display='block';">公告</div>
+			<div class="nav-li1" onclick="showData()">显示数据</div>
+			<div class="nav-li1">导出为
+				<div class="nav-ul2">
+					<div class="nav-li2" onclick="downCsv()">&nbsp;&nbsp;csv文件(.csv)</div>
+					<div class="nav-li2" onclick="downExcel()">&nbsp;&nbsp;excel表格(.xlsx)</div>
+				</div>
+			</div>
+			<div class="nav-li1" onclick="versionList();document.getElementById('history-div').style.display='block';">版本记录
+			</div>
+			<div class="nav-li1" style="width: 20px">
+				<div style="height: 35px;width:2px;background: #CACFD2"></div>
+			</div>
+			<div class="nav-li1" style="background-color: #82E0AA" onclick="saveTable()">保存</div>
 		</div>
 	</div>
 </div>
+<div style="width: 100%;height: 2px;background: #E5E7E9"></div>
 <div id="table"></div>
 <script>
 
 	let tableName = util.getUrlParam("tableName");
 	let userName = util.getUrlParam("userName");
 	console.log(tableName,userName);
-	//if (tableName != null && userName!=null){
-		//socket.init(tableName,userName);
+	if (tableName != null && userName!=null){
+		socket.init(tableName,userName);
 
+		document.title = tableName
 		let user = document.getElementById('user');
-		user.innerHTML = util.format(`用户:{0} `,userName);
+		user.innerHTML = userName;
 		let file = document.getElementById('tableName');
-		file.innerHTML = util.format(`表名:{0}`,tableName);
+		file.innerHTML = tableName;
 
 		var hot = handstable.init(document.getElementById('table'),tableName)
-		handstable.new([])
-	//}else {
-	//	util.alert("参数错误")
-	//}
+	}else {
+		util.alert("参数错误")
+	}
 
 	window.onbeforeunload = function (e) {
 		e = e || window.event;
@@ -124,7 +220,6 @@
 		// Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
 		return '关闭提示';
 	};
-
 
 </script>
 </body>

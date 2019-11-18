@@ -59,10 +59,12 @@ func (this *Session) SetStatus(status SessStatus) {
 
 func OnClose(sess kendynet.StreamSession, reason string) {
 	if session, ok := sessionMap[sess.RemoteAddr().String()]; ok {
-		fmt.Println("onclose", reason)
+		fmt.Printf("user:%s onclose %s\n", session.UserName, reason)
 		session.Table.RemoveSession(session)
 		session.Table = nil
 		delete(sessionMap, sess.RemoteAddr().String())
+	} else {
+		fmt.Printf("session:%s onclose %s\n", sess.RemoteAddr().String(), reason)
 	}
 }
 
@@ -80,11 +82,12 @@ func init() {
 			"insertCol":    {},
 			"removeCol":    {},
 			//"setCellValues": {},
-			"backEditor": {},
-			"saveTable":  {},
-			"pushAll":    {},
-			"rollback":   {},
-			"pushErr":    {},
+			"backEditor":  {},
+			"saveTable":   {},
+			"pushAll":     {},
+			"rollback":    {},
+			"pushErr":     {},
+			"versionList": {},
 		},
 	}
 

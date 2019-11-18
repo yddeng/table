@@ -45,9 +45,13 @@ function saveTable() {
     }
 }
 
-function lookHistory() {
-    let txt = $("#lookv").val();
-    let v = parseInt(txt)
+function versionList() {
+    if (handstable.status === StatusEnum.EDITOR) {
+        socket.send({cmd: "versionList"})
+    }
+}
+
+function lookHistory(v) {
     socket.send({cmd:"lookHistory",version:v})
 }
 
@@ -57,9 +61,13 @@ function backEditor() {
     }
 }
 
-function rollback() {
-    let txt = $("#rbv").val();
-    let v = parseInt(txt)
+function rollback(v) {
+    var ev=ev||event;
+    if(ev && ev.stopPropagation){
+        ev.stopPropagation();  //非IE下 它支持W3C的stopPropagation()方法
+    } else {
+        window.event.cancelBubble = true;  //IE的方式来取消事件冒泡
+    }
     socket.send({cmd:"rollback",version:v})
 }
 
@@ -87,8 +95,8 @@ dispatcher.handler["pushAll"] = function(msg) {
 };
 
 dispatcher.handler["openTable"] = function(msg) {
-    handstable.new(msg.data)
-    handstable.setVersion(msg.version)
+    handstable.new(msg.data);
+    handstable.setVersion(msg.version);
 };
 
 dispatcher.handler["cellSelected"] = function(msg) {
@@ -126,7 +134,9 @@ dispatcher.handler["removeCol"] = function(msg) {
     }
 };
 
-
+dispatcher.handler["versionList"] = function(msg) {
+    handstable.setHistory(msg.list);
+};
 
 dispatcher.handler["lookHistory"] = function(msg) {
     handstable.setVersion(msg.version);

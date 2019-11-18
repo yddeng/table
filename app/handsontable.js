@@ -75,12 +75,6 @@ handstable.new = function(data){
                 'unfreeze_column':{
                   name:'取消冻结'
                 },
-                'freeze_row':{
-                    name: '冻结该hang',
-                    callback: function () {
-                        insertRow(idx)
-                    }
-                },
               'row_above': {
                 name: '上面插入一行',
                   callback: function () {
@@ -174,8 +168,8 @@ handstable.new = function(data){
         },
         afterSelectionEnd: function(row, col, row2, col2) {
             //console.log("afterSelectionEnd",row,col,row2,col2)
-            //cellSelected({row:row, col:col, row2:row2, col2:col2})
-            handstable.setSelected("名字",{row:row, col:col, row2:row2, col2:col2})
+            cellSelected({row:row, col:col, row2:row2, col2:col2})
+            //handstable.setSelected("名字",{row:row, col:col, row2:row2, col2:col2})
             //handstable.setCellData({col:1,row:1,oldValue:"",newValue:"dd"})
         },
     });
@@ -202,6 +196,27 @@ handstable.setStatue = function(status){
     s.innerText = util.getStatusString(status)
 };
 
+handstable.setHistory = function(msg){
+    let tmp = `<div class="history-div-nav-li" onclick="lookHistory({0})">
+            <span style="font-weight: bold">第{1}版</span><span class="rbBtn" onclick="rollback({2})">还原</span><br>
+            <span style="font-weight: lighter">{3}</span><br>
+            {4}
+        </div>`
+    let userTmp = `<span style="font-size: 14px">{0}</span><br>`
+    let list = document.getElementById('history-div-nav');
+    list.innerHTML = "";
+    let str = "";
+    for(let i = 0;i < msg.length;i++) {
+        let item = msg[i];
+        let userStr = "";
+        for (let j = 0;j < item.users.length;j++){
+            userStr += util.format(userTmp,item.users[j])
+        }
+        str += util.format(tmp,item.version,item.version,item.version,item.date,userStr)
+    }
+    list.innerHTML = str ;
+};
+
 handstable.setSelected = function(name,selected){
     // 将上一次选中清空
     let lastCells = handstable.selected[name];
@@ -219,17 +234,17 @@ handstable.setSelected = function(name,selected){
 
     let newCells = [[selected.row,selected.col,selected.row2,selected.col2]];
     //let range = {from: {row: selected.row, col:selected.col},to: {row: selected.row2, col:selected.col2}};
-    console.log(handstable.table.getSelectedRange())
-    console.log(newCells)
+    //console.log(handstable.table.getSelectedRange())
+    //console.log(newCells)
     handstable.customBordersPlugin.setBorders(newCells,sty);
     handstable.selected[name] = newCells;
 
-    let metaRow = handstable.table.getCellMetaAtRow(selected.row)
-    console.log(metaRow)
-    handstable.table.setCellMeta(selected.row,selected.col,"width","300px")
-    let meta = handstable.table.getCellMeta(selected.row,selected.col)
-    console.log(meta)
-    handstable.table.setDataAtCell(selected.row,selected.col,"sss")
+    // let metaRow = handstable.table.getCellMetaAtRow(selected.row)
+    // console.log(metaRow)
+    // handstable.table.setCellMeta(selected.row,selected.col,"width","300px")
+    // let meta = handstable.table.getCellMeta(selected.row,selected.col)
+    // console.log(meta)
+    // handstable.table.setDataAtCell(selected.row,selected.col,"sss")
 };
 
 handstable.insertRow = function(row){
@@ -253,18 +268,18 @@ handstable.pos2Axis = function(col,row){
     return  util.format("{0}{1}",handstable.table.getColHeader(col),this.table.getRowHeader(row));
 };
 
-
 function downCsv() {
     handstable.exportPlugin.downloadFile('csv', {filename: handstable.tableName});
 };
 
 function downExcel() {
-    handstable.exportPlugin.downloadFile('csv', {filename: handstable.tableName});
+    let ws =  XLSX.utils.aoa_to_sheet(handstable.table.getData());
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    XLSX.writeFile(wb, util.format("{0}.xlsx",handstable.tableName))
 };
 
 function showData() {
     console.log(handstable.table.getData());
 }
-
-
 

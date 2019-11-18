@@ -121,6 +121,15 @@ func handleSaveTable(req map[string]interface{}, session *Session) {
 
 }
 
+func handleVersionList(req map[string]interface{}, session *Session) {
+	b := MustJsonMarshal(map[string]interface{}{
+		"cmd":  req["cmd"],
+		"list": session.Table.packHistory(),
+	})
+	session.Send(req["cmd"].(string), b)
+
+}
+
 func handleLookHistory(req map[string]interface{}, session *Session) {
 	ver := int(req["version"].(float64))
 	table := session.Table
@@ -131,7 +140,7 @@ func handleLookHistory(req map[string]interface{}, session *Session) {
 
 	if ver <= table.version {
 		for i := table.version; i > ver; i-- {
-			ret, err := pgsql.LoadCmd(table.tableName, i)
+			_, _, ret, err := pgsql.LoadCmd(table.tableName, i)
 			if err != nil {
 				pushErr(req["cmd"], err.Error(), session)
 				return
@@ -180,21 +189,24 @@ func handleRollback(req map[string]interface{}, session *Session) {
 	newF := newFile(getAll(table.xlFile))
 	if ver < table.version {
 		// 执行指令
-		for i := table.version; i > ver; i-- {
-			ret, err := pgsql.LoadCmd(table.tableName, i)
-			if err != nil {
-				pushErr(req["cmd"], err.Error(), session)
-				return
+		for id := table.version; id > ver; id-- {
+			//_, _, ret, err := pgsql.LoadCmd(table.tableName, i)
+			//if err != nil {
+			//	pushErr(req["cmd"], err.Error(), session)
+			//	return
+			//}
+			if v, ok := table.verHistory[id]; ok {
+				rollbackCmds(newF, v.cmds)
 			}
-			rollbackCmds(newF, ret)
 		}
 
 		// 保存版本回退指令
 		cmdStr := MustJsonMarshal([]map[string]interface{}{
 			{
-				"cmd":  req["cmd"],
-				"now":  table.version,
-				"goto": ver,
+				"cmd":       req["cmd"],
+				"tableName": table.tableName,
+				"now":       table.version,
+				"goto":      ver,
 			},
 		})
 		users := MustJsonMarshal([]string{session.UserName})
@@ -216,6 +228,7 @@ func handleRollback(req map[string]interface{}, session *Session) {
 	}
 
 	// 当前表状态更改
+	table.loadHistory()
 	table.cmds = []map[string]interface{}{}
 	table.cmdUsers = []string{}
 	table.xlFile = newFile(getAll(newF))
@@ -259,4 +272,6 @@ func init() {
 	dispatcher["backEditor"] = handleBackEditor
 	// 回滚版本，单独生成一条版本记录
 	dispatcher["rollback"] = handleRollback
+	// 获取版本列表
+	dispatcher["versionList"] = handleVersionList
 }

@@ -19,7 +19,6 @@ resp ok= 1/0
 ## pushAll 推送所有数据
 ```
 cmd : "pushAll"
-tableName : "xxx"
 version : int
 data:  // [][]string
 ```
@@ -112,6 +111,18 @@ toc
 cmd    : "lookHistory"
 version: int
 data   :  //[][]string
+```
+
+## 版本列表
+tos
+```
+cmd: "versionList"
+```
+
+toc
+```
+cmd    : "versionList"
+list: []{version:int,users:[]string,date:string} // 版本历史记录
 ```
 
 ## 回到编辑状态

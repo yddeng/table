@@ -23,8 +23,16 @@ type Table struct {
 	xlFile     *excelize.File      // 指令计算的结果文件，最终落地到数据库
 	sessionMap map[string]*Session // session, for remoteAddr
 
-	cmds     []map[string]interface{} // 当前cmd指令的集合
-	cmdUsers []string                 // 产生当前指令的用户
+	cmds       []map[string]interface{} // 当前cmd指令的集合
+	cmdUsers   []string                 // 产生当前指令的用户
+	verHistory map[int]*VerHistory      // 历史版本，查询20条
+}
+
+type VerHistory struct {
+	version int
+	users   []string
+	date    string
+	cmds    []map[string]interface{}
 }
 
 func PostTask(task func()) {
@@ -42,7 +50,7 @@ func OpenTable(tableName string) (*Table, error) {
 	//fmt.Println(v, data, err)
 	xlFile := newFile(data)
 	tmpFile := newFile(data)
-	return &Table{
+	table := &Table{
 		tableName:  tableName,
 		version:    v,
 		tmpFile:    tmpFile,
@@ -50,7 +58,48 @@ func OpenTable(tableName string) (*Table, error) {
 		sessionMap: map[string]*Session{},
 		cmds:       []map[string]interface{}{},
 		cmdUsers:   []string{},
-	}, nil
+	}
+	table.loadHistory()
+
+	return table, nil
+}
+
+func (this *Table) loadHistory() {
+	this.verHistory = map[int]*VerHistory{}
+	for i := 0; i < 20; i++ {
+		id := this.version - i
+		if id <= 0 {
+			break
+		}
+		users, date, cmds, err := pgsql.LoadCmd(this.tableName, id)
+		if err != nil {
+			fmt.Println(err)
+			break
+		}
+		this.verHistory[id] = &VerHistory{
+			version: id,
+			users:   users,
+			date:    date,
+			cmds:    cmds,
+		}
+	}
+}
+
+func (this *Table) packHistory() []map[string]interface{} {
+	ret := []map[string]interface{}{}
+	for i := this.version; i > 0; i-- {
+		v, ok := this.verHistory[i]
+		if !ok {
+			break
+		}
+
+		ret = append(ret, map[string]interface{}{
+			"version": v.version,
+			"users":   v.users,
+			"date":    v.date,
+		})
+	}
+	return ret
 }
 
 // 保存，这里指落地到数据库
@@ -69,6 +118,7 @@ func (this *Table) SaveTable() error {
 		this.version = v
 		this.cmds = []map[string]interface{}{}
 		this.cmdUsers = []string{}
+		this.loadHistory()
 
 		// 保存最新数据
 		b := MustJsonMarshal(getAll(this.xlFile))
