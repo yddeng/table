@@ -85,8 +85,8 @@
 			top: 60px;
 			right: 0px;
 			width: 200px;
-			height: 80%;
-			padding: 10px;
+			height: calc(100% - 65px);
+			/*padding: 10px;*/
 			border: 1px solid #F2F3F4 ;
 			background-color: rgba(251,252,252,1.0) ;
 			z-index: 1002;
@@ -98,7 +98,7 @@
 		}
 		.rbBtn{
 			font-size: 12px;
-			margin-left: 100px
+			margin-left: 90px
 		}
 		.rbBtn:hover{
 			color:#3498DB;
@@ -131,12 +131,22 @@
 			z-index: 1002;
 			overflow: auto;
 		}
+		.tips{
+			display: none;
+			position: absolute;
+			top: 25%;
+			left: 40%;
+			padding: 10px;
+			background-color: #95A5A6;
+			z-index: 1002;
+		}
+
 	</style>
 </head>
 <body>
+<div id="tips" class="tips"><span id="tips-msg"></span></div>
 <div id="history-div" class="history-div">
-	<a href = "javascript:void(0)" style="margin-left: 150px" onclick = "document.getElementById('history-div').style.display='none';backEditor()">关闭</a>
-	<hr>
+	<a href = "javascript:void(0)" style="margin-left: 130px" onclick = "document.getElementById('history-div').style.display='none';backEditor()">关闭</a>
 	<div id="history-div-nav"></div>
 </div>
 <div id="fade" class="black_overlay"></div>
@@ -173,7 +183,7 @@
 			</span>
 		</div>
 		<div id="menu">
-			<div class="nav-li1" onclick = "document.getElementById('notion').style.display='block';">公告</div>
+			<div class="nav-li1" onclick = "document.getElementById('notion').style.display='block';">用户须知</div>
 			<div class="nav-li1" onclick="showData()">显示数据</div>
 			<div class="nav-li1">导出为
 				<div class="nav-ul2">
@@ -197,10 +207,10 @@
 	let tableName = util.getUrlParam("tableName");
 	let userName = util.getUrlParam("userName");
 	console.log(tableName,userName);
-	if (tableName != null && userName!=null){
+	if (tableName != null && userName !=null){
 		socket.init(tableName,userName);
 
-		document.title = tableName
+		document.title = tableName;
 		let user = document.getElementById('user');
 		user.innerHTML = userName;
 		let file = document.getElementById('tableName');
@@ -209,6 +219,15 @@
 		var hot = handstable.init(document.getElementById('table'),tableName)
 	}else {
 		util.alert("参数错误")
+	}
+
+	function showTips(msg,t) {
+		let tip = document.getElementById('tips');
+		tip.style.display = "block";
+
+		let m = document.getElementById("tips-msg");
+		m.innerText=msg;
+		setTimeout(function(){ tip.style.display = "none"},t)
 	}
 
 	window.onbeforeunload = function (e) {

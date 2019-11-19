@@ -14,6 +14,12 @@ req  getAllTable
 resp ok= 1/0
      msg= string
      tables = []{tableName:string,version:int}
+
+## 下载
+req  downloadTable?tableName=xxx&userName=xxx
+resp ok= 1/0
+     msg= string
+     data = [][]string
         
 #websocket
 ## pushAll 推送所有数据

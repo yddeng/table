@@ -1,6 +1,7 @@
 package pgsql
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -25,23 +26,24 @@ func CreateTableCmd(tableName string) error {
 }
 
 // 插入操作
-func InsertCmd(tableName, userName, cmd string) (int, error) {
+func InsertCmd(tableName, userName, cmd string) (int, string, error) {
 	sqlStr := `
-INSERT INTO %s_cmd (users,date,cmds)  
+INSERT INTO "%s_cmd" (users,date,cmds)  
 VALUES ('%s','%s','%s')
 RETURNING version;`
 
 	date := GenDateTimeString(time.Now())
 	sqlStatement := fmt.Sprintf(sqlStr, tableName, userName, date, cmd)
+	//fmt.Println(sqlStatement)
 	row := dbConn.QueryRow(sqlStatement)
 	var id int
 	err := row.Scan(&id)
-	return id, err
+	return id, date, err
 }
 
 func LoadCmd(tableName string, v int) ([]string, string, []map[string]interface{}, error) {
 	sqlStr := `
-SELECT users,date,cmds FROM %s_cmd 
+SELECT users,date,cmds FROM "%s_cmd" 
 WHERE version=%d;`
 
 	sqlStatement := fmt.Sprintf(sqlStr, tableName, v)
@@ -61,7 +63,7 @@ WHERE version=%d;`
 
 func Insert(tableName string, fields map[string]interface{}) error {
 	sqlStr := `
-INSERT INTO %s (%s)
+INSERT INTO "%s" (%s)
 VALUES (%s);`
 
 	keys, values := []string{}, []string{}
@@ -83,10 +85,50 @@ VALUES (%s);`
 	return err
 }
 
-func Select(tableName string, id interface{}) (map[string]interface{}, error) {
-	sqlStr := `
-SELECT * FROM %s
-WHERE version=%d;`
-	fmt.Println(sqlStr)
-	return nil, nil
+type SelectClient struct {
+	sql    string
+	fields []string
+	smt    *sql.Stmt
+}
+
+func (this *SelectClient) Query(rb func(map[string]interface{}, error), args ...interface{}) {
+	row := this.smt.QueryRow(args...)
+	mid := make([]interface{}, len(this.fields))
+	l := "&mid[0],&mid[1],&mid[2]"
+	err := row.Scan(l)
+	if err != nil {
+		rb(nil, err)
+		return
+	}
+
+	ret := map[string]interface{}{}
+	for i, v := range this.fields {
+		ret[v] = mid[i]
+	}
+	rb(ret, nil)
+}
+
+func NewSelect(tableName, fields string, key ...string) (*SelectClient, error) {
+	tmp := `
+SELECT %s FROM %s
+`
+	sqlStr := ""
+	if len(key) > 0 {
+		tmp += `WHERE %s=$1;`
+		sqlStr = fmt.Sprintf(tmp, fields, tableName, key[0])
+	} else {
+		tmp += `;`
+		sqlStr = fmt.Sprintf(tmp, fields, tableName)
+	}
+
+	smt, err := dbConn.Prepare(sqlStr)
+	if err != nil {
+		return nil, err
+	}
+	fields_ := strings.Split(fields, ",")
+	return &SelectClient{
+		sql:    sqlStr,
+		fields: fields_,
+		smt:    smt,
+	}, nil
 }

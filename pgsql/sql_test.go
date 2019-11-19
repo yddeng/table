@@ -14,7 +14,7 @@ func TestCreateTable(t *testing.T) {
 }
 
 func TestLoadTableData(t *testing.T) {
-	_, _, err := LoadTableData("df")
+	_, _, _, _, err := LoadTableData("df")
 	fmt.Println(err)
 }
 
@@ -33,8 +33,22 @@ func TestUpdateTableData(t *testing.T) {
 	fmt.Println(data, err)
 	b, err := json.Marshal(data)
 	fmt.Println(string(b), err)
-	err = UpdateTableData("55", 1, string(b))
-
-	v, d, err := LoadTableData("ddd")
+	err = UpdateTableData("ydd", map[string]interface{}{
+		"version": 2,
+		"date":    "sdd",
+		"data":    string(b),
+	})
+	fmt.Println(err)
+	v, _, _, d, err := LoadTableData("ddd")
 	fmt.Println(v, d, err)
+}
+
+func TestNewSelect(t *testing.T) {
+	c, err := NewSelect("table_data", "version,date,describe", "table_name")
+	fmt.Println(err)
+	if err == nil {
+		c.Query(func(i map[string]interface{}, e error) {
+			fmt.Println(i, e)
+		}, "test")
+	}
 }

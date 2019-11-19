@@ -3,7 +3,6 @@ package table
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/yddeng/table/pgsql"
 	"net/http"
 )
@@ -18,7 +17,7 @@ func HandleCreateTable(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
 	w.Header().Set("content-type", "application/json")             //返回数据格式是json
 
-	var tableName, userName string
+	var tableName, userName, desc string
 	if t, ok := r.Form["tableName"]; ok {
 		tableName = t[0]
 	}
@@ -27,13 +26,17 @@ func HandleCreateTable(w http.ResponseWriter, r *http.Request) {
 		userName = p[0]
 	}
 
+	if p, ok := r.Form["describe"]; ok {
+		desc = p[0]
+	}
+
 	if tableName == "" || userName == "" {
 		httpErr("参数错误", w)
 		return
 	}
 
 	// 判断名字是否存在
-	_, _, err := pgsql.LoadTableData(tableName)
+	_, _, _, _, err := pgsql.LoadTableData(tableName)
 	if err == nil {
 		httpErr("名字重复", w)
 		return
@@ -47,9 +50,7 @@ func HandleCreateTable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// todo 失败，回滚
-	// 添加数据
-	b, _ := json.Marshal([]string{})
-	err = pgsql.InsertTableData(tableName, 0, string(b))
+	err = pgsql.InsertTableData(tableName, desc)
 	if err != nil {
 		httpErr(err.Error(), w)
 		return
@@ -137,28 +138,16 @@ func HandleDownloadTable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, data, err := pgsql.LoadTableData(tableName)
+	_, _, _, data, err := pgsql.LoadTableData(tableName)
 	if err != nil {
 		httpErr(err.Error(), w)
 		return
 	}
 
-	xlFile := newFile(data)
-	fileName := fmt.Sprintf("%s.xlsx", tableName)
-	err = xlFile.SaveAs(fileName)
-	if err != nil {
-		httpErr(err.Error(), w)
-		return
-	}
-
-	file, err := excelize.OpenFile(fileName)
-	if err != nil {
-		httpErr(err.Error(), w)
-		return
-	}
-
-	err = file.Write(w)
-	if err != nil {
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":   1,
+		"data": data,
+	}); err != nil {
 		logger.Errorf("http resp err:", err)
 	}
 }

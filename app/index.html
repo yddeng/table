@@ -2,12 +2,237 @@
 <html>
 <head>
     <meta charset='utf-8'>
-    <title> Index</title>
+    <title>Editor</title>
+    <script src="dist/jquery.min.js"></script>
+    <script src="dist/xlsx.full.min.js"></script>
+    <script src="util.js"></script>
+    <style>
+        body{
+            margin: 0 auto;
+            background: #F2F3F4 ;
+        }
+        #header{
+            width: 100%;
+            height: 100px;
+        }
+        #menu{
+            margin-left: 10%;
+            width: 80%;
+        }
+        #list{
+            margin-left: 10%;
+            width: 80%;
+        }
+        .item-name{
+            width: 10%;
+            float: left;
+        }
+        .item-describe{
+            width: 40%;
+            float: left;
+        }
+        .item-version{
+            width: 10%;
+            float: left;
+        }
+        .item-date{
+            width: 20%;
+            float: left;
+        }
+        .item-action{
+            width: 20%;
+            float: left;
+        }
+        #item-header{
+            height: 50px;
+            line-height: 50px;
+        }
+        .item{
+            height: 40px;
+            line-height: 40px;
+            /*border: 1px solid white;*/
+        }
+        .item:hover{
+            background-color: #E5E7E9;
+        }
+        button{
+            cursor: pointer;
+            height: 30px;
+            width: 50px;
+        }
+
+        /* 公告 */
+        .newTable {
+            display: none;
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            width: 500px;
+            height: 200px;
+            padding: 20px;
+            border: 1px solid #A6ACAF;
+            background-color: white;
+            z-index: 1002;
+            overflow: auto;
+        }
+
+        .tips{
+            display: none;
+            position: absolute;
+            top: 25%;
+            left: 40%;
+            padding: 10px;
+            background-color: #95A5A6;
+            z-index: 1002;
+        }
+
+    </style>
 </head>
 <body>
-<div>
-    <a href="editor.html?tableName=test&userName=deng">Editor</a>
+<div id="tips" class="tips"><span id="tips-msg"></span></div>
+<div id="newTable" class="newTable">
+    <input id="new_name" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="表名(*必填)">
+    <br><br>
+    <input id="new_describe" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="描述(选填)">
+    <br><br>
+    <button onclick="document.getElementById('newTable').style.display='none';createTable()" >ok</button>
 </div>
+<div id="header"></div>
+<div>
+    <div id="menu">
+        &nbsp;&nbsp;<button style="width: 100px;height: 50px" onclick="document.getElementById('newTable').style.display='block';">新建表格</button>
+    </div>
+    <div id="list">
+        <div id="item-header">
+            <div class="item-name">名称</div>
+            <div class="item-describe">描述</div>
+            <div class="item-version">当前版本</div>
+            <div class="item-date">时间</div>
+            <div class="item-action">操作</div>
+        </div>
+        <hr>
+        <div id="item-list"></div>
+    </div>
+</div>
+<script>
+    const url = "http://10.128.2.123:4545";
+    let userName = "";
+    window.onload = function () {
+        userName = util.prom("请输入您的名字");
+        getAllTable()
+    };
 
+    function showTips(msg,t) {
+        let tip = document.getElementById('tips');
+        tip.style.display = "block";
+
+        let m = document.getElementById("tips-msg");
+        m.innerText=msg;
+        setTimeout(function(){ tip.style.display = "none"},t)
+    }
+
+    function createTable() {
+        if (!userName){
+            userName = util.prom("请输入您的名字")
+            return
+        }
+        let tableName = document.getElementById("new_name").value;
+        let describe = document.getElementById("new_describe").value;
+        console.log("fsf",tableName,describe)
+        if (!tableName){
+            showTips("请输入表名",3000);
+            return
+        }
+        let req = url+"/createTable?tableName="+tableName+"&userName="+userName+"&describe="+describe;
+        $.ajax({
+            url:req,
+            type: "get",
+            async: true,
+            success: function (res) {
+                if(res.ok === 1){
+                    getAllTable()
+                }else{
+                    showTips(res.msg,2000)
+                }
+            },
+            error: function (e){
+            }
+        });
+    }
+
+    function download(tableName) {
+        if (!userName){
+            userName = util.prom("请输入您的名字")
+            return
+        }
+        let req = url+"/downloadTable?tableName="+tableName+"&userName="+userName;
+        $.ajax({
+            url:req,
+            type: "get",
+            async: true,
+            success: function (res) {
+                if(res.ok === 1){
+                    let ws =  XLSX.utils.aoa_to_sheet(res.data);
+                    let wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+                    XLSX.writeFile(wb, util.format("{0}.xlsx",tableName))
+                }else{
+                    showTips(res.msg,2000)
+                }
+            }
+        });
+    }
+
+    function openTable(tableName){
+        let req = url+"/editor.html?tableName="+tableName+"&userName="+userName;
+        if (!userName){
+            userName = util.prom("请输入您的名字")
+        }else {
+            window.location.href = req;
+        }
+    }
+
+    function getAllTable() {
+        let req = url+"/getAllTable";
+        $.ajax({
+            url:req,
+            type: "get",
+            async: true,
+            success: function (res) {
+                if(res.ok === 1){
+                    showItem(res.tables)
+                }else{
+                    showTips(res.msg,2000)
+                }
+            },
+            error: function (e){
+            }
+        });
+    }
+
+    function showItem(items) {
+        let tmp = `<div class="item">
+                <div class="item-name">{0}</div>
+                <div class="item-describe">{1}</div>
+                <div class="item-version">{2}</div>
+                <div class="item-date">{3}</div>
+                <div class="item-action">
+                    <button onclick="download('{4}')">下载</button>
+                    <button onclick="openTable('{5}')">编辑</button>
+                </div>
+            </div>
+<hr>`
+        let list = document.getElementById('item-list');
+        list.innerHTML = "";
+        let str = "";
+        for(let i = 0;i < items.length;i++) {
+            let item = items[i];
+            str += util.format(tmp,item.tableName,item.describe,item.version,item.date,item.tableName,item.tableName)
+        }
+        list.innerHTML = str ;
+    }
+
+
+</script>
 </body>
 </html>

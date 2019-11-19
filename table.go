@@ -43,7 +43,7 @@ func PostTask(task func()) {
 // 将数据赋值给 xlFile, tmpFile
 func OpenTable(tableName string) (*Table, error) {
 	fmt.Println("loadTable", tableName)
-	v, data, err := pgsql.LoadTableData(tableName)
+	_, v, _, data, err := pgsql.LoadTableData(tableName)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (this *Table) SaveTable() error {
 		// 保存版本指令
 		cmdsStr, _ := json.Marshal(this.cmds)
 		users, _ := json.Marshal(this.cmdUsers)
-		v, err := pgsql.InsertCmd(this.tableName, string(users), string(cmdsStr))
+		v, date, err := pgsql.InsertCmd(this.tableName, string(users), string(cmdsStr))
 		if err != nil {
 			return err
 		}
@@ -122,7 +122,11 @@ func (this *Table) SaveTable() error {
 
 		// 保存最新数据
 		b := MustJsonMarshal(getAll(this.xlFile))
-		err = pgsql.UpdateTableData(this.tableName, this.version, string(b))
+		err = pgsql.UpdateTableData(this.tableName, map[string]interface{}{
+			"version": this.version,
+			"date":    date,
+			"data":    string(b),
+		})
 		if err != nil {
 			return err
 		}

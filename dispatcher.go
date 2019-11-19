@@ -76,33 +76,34 @@ func handleInsertRow(req map[string]interface{}, session *Session) {
 	session.Table.AddCmd(req, session.UserName)
 	doCmd(session.Table.tmpFile, req, false)
 	session.Table.pushAllSession(req)
-	session.Table.pushAll()
+	//session.Table.pushAll()
 }
 
 func handleRemoveRow(req map[string]interface{}, session *Session) {
 	session.Table.AddCmd(req, session.UserName)
 	doCmd(session.Table.tmpFile, req, false)
 	session.Table.pushAllSession(req)
-	session.Table.pushAll()
+	//session.Table.pushAll()
 }
 
 func handleInsertCol(req map[string]interface{}, session *Session) {
 	session.Table.AddCmd(req, session.UserName)
 	doCmd(session.Table.tmpFile, req, false)
 	session.Table.pushAllSession(req)
-	session.Table.pushAll()
+	//session.Table.pushAll()
 }
 
 func handleRemoveCol(req map[string]interface{}, session *Session) {
 	session.Table.AddCmd(req, session.UserName)
 	doCmd(session.Table.tmpFile, req, false)
 	session.Table.pushAllSession(req)
-	session.Table.pushAll()
+	//session.Table.pushAll()
 }
 
 func handleSetCellValues(req map[string]interface{}, session *Session) {
 	session.Table.AddCmd(req, session.UserName)
 	doCmd(session.Table.tmpFile, req, false)
+	//session.Table.pushAllSession(req)
 	session.Table.pushAll()
 }
 
@@ -210,7 +211,7 @@ func handleRollback(req map[string]interface{}, session *Session) {
 			},
 		})
 		users := MustJsonMarshal([]string{session.UserName})
-		v, err := pgsql.InsertCmd(table.tableName, string(users), string(cmdStr))
+		v, date, err := pgsql.InsertCmd(table.tableName, string(users), string(cmdStr))
 		if err != nil {
 			pushErr(req["cmd"], err.Error(), session)
 			return
@@ -218,7 +219,11 @@ func handleRollback(req map[string]interface{}, session *Session) {
 
 		// 更新数据库
 		b := MustJsonMarshal(getAll(newF))
-		err = pgsql.UpdateTableData(table.tableName, table.version, string(b))
+		err = pgsql.UpdateTableData(table.tableName, map[string]interface{}{
+			"version": v,
+			"date":    date,
+			"data":    string(b),
+		})
 		if err != nil {
 			pushErr(req["cmd"], err.Error(), session)
 			// todo 应该删除回退操作日志

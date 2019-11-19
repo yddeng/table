@@ -1,7 +1,7 @@
 var socket = socket || {};
 
 socket.ws = null;
-socket.url = "ws://10.128.2.252:4545/table";
+socket.url = "ws://10.128.2.123:4545/table";
 socket.fileName = null;
 socket.userName = null;
 

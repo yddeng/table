@@ -1,7 +1,6 @@
 //import zhCh from "./dist/zh-CN.min"
 
 var handstable = {};
-
 var StatusEnum = {
     NONE: 1,    // 没有初始化的操作
     EDITOR: 2,  // 编辑状态
@@ -11,7 +10,6 @@ var StatusEnum = {
 handstable.status = StatusEnum.NONE;
 handstable.container = null;  // html
 handstable.version = null;    // 版本号
-handstable.data = null;       // 表数据
 handstable.tableName = null;  // 表名
 handstable.table = null;      // handsontable 实列
 
@@ -26,16 +24,16 @@ handstable.init = function (container,name) {
     this.tableName = name;
 };
 
-handstable.new = function(data){
+handstable.new = function(data,isReadOnly){
     if (data.length ==0){
         data = [[]]
     }
     handstable.setStatue(StatusEnum.EDITOR);
-    handstable.data = data;
     handstable.table =  new Handsontable(handstable.container, {
         data: data,
+        readOnly:isReadOnly,
         width:'100%',
-        height:window.innerHeight - 100,
+        height:window.innerHeight - 65,
         minCols:26, //最小列数
         //maxCols: 50, //最大列数
         minRows:50 , //最小行数
@@ -177,13 +175,6 @@ handstable.new = function(data){
     handstable.exportPlugin = handstable.table.getPlugin('exportFile')
 };
 
-handstable.setData = function(data){
-    handstable.data = data;
-    if (handstable.table) {
-        handstable.table.loadData(data)
-    }
-};
-
 handstable.setVersion = function(v){
     handstable.version = v;
     let ver = document.getElementById('n_version');
@@ -198,11 +189,13 @@ handstable.setStatue = function(status){
 
 handstable.setHistory = function(msg){
     let tmp = `<div class="history-div-nav-li" onclick="lookHistory({0})">
-            <span style="font-weight: bold">第{1}版</span><span class="rbBtn" onclick="rollback({2})">还原</span><br>
-            <span style="font-weight: lighter">{3}</span><br>
+            <div style="width: 100%;height: 5px;"></div>
+            &nbsp;&nbsp;<span style="font-weight: bold">第{1}版</span><span class="rbBtn" onclick="rollback({2})">还原</span><br>
+            &nbsp;&nbsp;<span style="font-weight: lighter">{3}</span><br>
             {4}
+            <div style="width: 100%;height: 5px;"></div>
         </div>`
-    let userTmp = `<span style="font-size: 14px">{0}</span><br>`
+    let userTmp = `&nbsp;&nbsp;<span style="font-size: 14px">{0}</span><br>`
     let list = document.getElementById('history-div-nav');
     list.innerHTML = "";
     let str = "";
@@ -247,17 +240,17 @@ handstable.setSelected = function(name,selected){
     // handstable.table.setDataAtCell(selected.row,selected.col,"sss")
 };
 
-handstable.insertRow = function(row){
-    handstable.table.alter("insert_row",row)
+handstable.insertRow = function(idx){
+    handstable.table.alter("insert_row",idx)
 };
-handstable.removeRow = function(row){
-    handstable.table.alter("remove_row",row)
+handstable.removeRow = function(idx){
+    handstable.table.alter("remove_row",idx)
 };
-handstable.insertCol = function(row){
-    handstable.table.alter("insert_col",row)
+handstable.insertCol = function(idx){
+    handstable.table.alter("insert_col",idx)
 };
-handstable.removeCol = function(row){
-    handstable.table.alter("remove_col",row)
+handstable.removeCol = function(idx){
+    handstable.table.alter("remove_col",idx)
 };
 
 handstable.setCellData = function(msg){

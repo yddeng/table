@@ -84,12 +84,13 @@ dispatcher.DispatchMessage = function(msg) {
 };
 
 dispatcher.handler["pushErr"] = function(msg) {
-    util.alert(util.format("cmd:{0}\nerrMsg:{1}",msg.doCmd,msg.errMsg))
+    showTips(util.format("cmd:{0}\nerrMsg:{1}",msg.doCmd,msg.errMsg),3000);
 };
 
 dispatcher.handler["pushAll"] = function(msg) {
     if (handstable.status === StatusEnum.EDITOR) {
-        handstable.setData(msg.data);
+        handstable.table.loadData(msg.data)
+        handstable.table.render();
         handstable.setVersion(msg.version)
     }
 };
@@ -107,9 +108,9 @@ dispatcher.handler["cellSelected"] = function(msg) {
 
 dispatcher.handler["saveTable"] = function(msg) {
     if (handstable.status === StatusEnum.EDITOR) {
-        handstable.setData(msg.data)
-        handstable.setVersion(msg.version)
-        util.alert("文件已保存")
+        handstable.table.loadData(msg.data)
+        handstable.setVersion(msg.version);
+        showTips("文件已保存",3000);
     }
 };
 
@@ -140,18 +141,18 @@ dispatcher.handler["versionList"] = function(msg) {
 
 dispatcher.handler["lookHistory"] = function(msg) {
     handstable.setVersion(msg.version);
-    handstable.setData(msg.data);
+    handstable.new(msg.data,true)
     handstable.setStatue(StatusEnum.LOOK);
 };
 
 dispatcher.handler["backEditor"] = function(msg) {
     handstable.setVersion(msg.version);
-    handstable.setData(msg.data);
+    handstable.new(msg.data);
     handstable.setStatue(StatusEnum.EDITOR);
 };
 
 dispatcher.handler["rollback"] = function(msg) {
     handstable.setVersion(msg.version);
-    handstable.setData(msg.data);
-    util.alert(util.format("版本已回退到:{0}",msg.version))
+    handstable.table.loadData(msg.data);
+    showTips(util.format("版本已还原至:{0}",msg.version),3000);
 };
