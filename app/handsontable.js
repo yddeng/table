@@ -165,11 +165,14 @@ handstable.new = function(data,isReadOnly){
             }
         },
         afterSelectionEnd: function(row, col, row2, col2) {
-            //console.log("afterSelectionEnd",row,col,row2,col2)
             cellSelected({row:row, col:col, row2:row2, col2:col2})
-            //handstable.setSelected("名字",{row:row, col:col, row2:row2, col2:col2})
-            //handstable.setCellData({col:1,row:1,oldValue:"",newValue:"dd"})
         },
+        afterRender:function (isForced) {
+            //console.log("afterRender",isForced);
+            $.each(handstable.selected,function (name,item) {
+                handstable.showUser(item.selected.row,item.selected.col,item.div)
+            });
+        }
     });
     handstable.customBordersPlugin = handstable.table.getPlugin('customBorders');
     handstable.exportPlugin = handstable.table.getPlugin('exportFile')
@@ -212,32 +215,53 @@ handstable.setHistory = function(msg){
 
 handstable.setSelected = function(name,selected){
     // 将上一次选中清空
-    let lastCells = handstable.selected[name];
-    if (lastCells){
-        handstable.customBordersPlugin.clearBorders(lastCells);
+    let value = handstable.selected[name];
+    if (value){
+        let lastSelected = value.selected
+        handstable.customBordersPlugin.clearBorders([[lastSelected.row,lastSelected.col,lastSelected.row2,lastSelected.col2]]);
+
+        let cell = handstable.table.getCell(lastSelected.row,lastSelected.col);
+        if (cell){
+            cell.removeChild(value.div)
+        }
         delete handstable.selected[name];
     }
 
-    let sty = handstable.userColor[name];
-    if (!sty){
+    let colr = handstable.userColor[name];
+    if (!colr){
         let len = Object.keys(handstable.userColor).length;
-        sty = util.getColor(len);
-        handstable.userColor[name] = sty
+        colr = util.getColor(len);
+        handstable.userColor[name] = colr
     }
 
     let newCells = [[selected.row,selected.col,selected.row2,selected.col2]];
-    //let range = {from: {row: selected.row, col:selected.col},to: {row: selected.row2, col:selected.col2}};
-    //console.log(handstable.table.getSelectedRange())
-    //console.log(newCells)
-    handstable.customBordersPlugin.setBorders(newCells,sty);
-    handstable.selected[name] = newCells;
+    handstable.customBordersPlugin.setBorders(newCells,util.makeBorderStyle(colr));
+    let newDiv = handstable.makeDiv(name,colr);
+    handstable.selected[name] = {selected:selected,div:newDiv};
+    handstable.showUser(selected.row,selected.col,newDiv)
+};
 
-    // let metaRow = handstable.table.getCellMetaAtRow(selected.row)
-    // console.log(metaRow)
-    // handstable.table.setCellMeta(selected.row,selected.col,"width","300px")
-    // let meta = handstable.table.getCellMeta(selected.row,selected.col)
-    // console.log(meta)
-    // handstable.table.setDataAtCell(selected.row,selected.col,"sss")
+handstable.makeDiv = function(name,color) {
+    let divElement = document.createElement("div")
+    divElement.innerHTML = name;
+    divElement.style.position = "absolute";
+    divElement.style.marginTop = "-23px";
+    divElement.style.marginLeft = "-5px";
+    divElement.style.paddingLeft = "5px";
+    divElement.style.paddingRight = "5px";
+    divElement.style.zIndex = "1000";
+    divElement.style.height = "23px";
+    divElement.style.width = "auto";
+    divElement.style.color = "black";
+    divElement.style.background= color;
+    return divElement
+};
+
+handstable.showUser =  function(row,column,div_) {
+    let cell = handstable.table.getCell(row,column);
+    if (cell){
+        cell.appendChild(div_)
+    }
 };
 
 handstable.insertRow = function(idx){
@@ -273,6 +297,20 @@ function downExcel() {
 };
 
 function showData() {
-    console.log(handstable.table.getData());
+    let data = handstable.table.getData();
+    let msg = "";
+    for (let i = 0;i < data.length;i++){
+        let row = data[i];
+        for (let j = 0;j < row.length;j++){
+            if (row[j] == null || row[j] ==""){
+                msg+="  ,"
+            }else {
+                msg+=row[j]+" ,"
+            }
+        }
+        msg += "\n"
+    }
+    //console.log(msg);
+    showTips(msg,5000)
 }
 

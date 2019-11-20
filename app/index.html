@@ -200,6 +200,7 @@
             async: true,
             success: function (res) {
                 if(res.ok === 1){
+                    console.log(res);
                     showItem(res.tables)
                 }else{
                     showTips(res.msg,2000)
@@ -227,7 +228,11 @@
         let str = "";
         for(let i = 0;i < items.length;i++) {
             let item = items[i];
-            str += util.format(tmp,item.tableName,item.describe,item.version,item.date,item.tableName,item.tableName)
+            if (item.describe === ""){
+                str += util.format(tmp,item.tableName,"暂无描述",item.version,item.date,item.tableName,item.tableName)
+            }else {
+                str += util.format(tmp,item.tableName,item.describe,item.version,item.date,item.tableName,item.tableName)
+            }
         }
         list.innerHTML = str ;
     }

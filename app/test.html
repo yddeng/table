@@ -14,9 +14,10 @@
     </style>
 </head>
 <body>
-<div id="table"></div>
+<div id="table" style="position: absolute"></div>
 <script>
-    let container = document.getElementById('table')
+    var selecteds = new Array();
+    let container = document.getElementById('table');
  let hot =  new Handsontable(container, {
         data: [["1","2","3","4","5","6"]],
         readOnly:false,
@@ -50,86 +51,68 @@
         //redo: true,
         //language:Handsontable.language.registerLanguageDictionary(zhCh),
         contextMenu:true, //显示表头的下拉菜单默认false 可取 true/false/自定义数组
-        contextMenu: {    //内容部分的menu 对功能汉化
-            callback: function (key, selection, clickEvent) {
-                //console.log(key, selection, clickEvent);
-            },
-            items: {
-                'freeze_column':{
-                    name: '冻结该列'
-                },
-                'unfreeze_column':{
-                    name:'取消冻结'
-                },
-                'row_above': {
-                    name: '上面插入一行',
-                    callback: function () {
-                        let idx = this.getSelectedLast()[0];
-                        insertRow(idx)
-                    }
-                },
-                'row_below': {
-                    name: '下面插入一行',
-                    callback: function () {
-                        let idx = this.getSelectedLast()[0]+1;
-                        insertRow(idx)
-                    }
-                },
-                'col_left':{
-                    name: '左侧插入一列',
-                    callback: function () {
-                        let idx = this.getSelectedLast()[1];
-                        insertCol(idx)
-                    }
-                },
-                'col_right':{
-                    name: '右侧插入一列',
-                    callback: function () {
-                        let idx = this.getSelectedLast()[1]+1;
-                        insertCol(idx)
-                    }
-                },
-                '---------':{},
-                'remove_row':{
-                    name: '移除本行',
-                    callback: function () {
-                        let idx = this.getSelectedLast()[0];
-                        removeRow(idx)
-                    }
-                },
-                'remove_col':{
-                    name: '移除本列',
-                    callback: function () {
-                        let idx = this.getSelectedLast()[1];
-                        removeCol(idx)
-                    }
-                },
-                'separator': Handsontable.plugins.ContextMenu.SEPARATOR,
-                'clear_custom': {
-                    name: '清空所有单元格数据',
-                    callback: function () {
-                        this.clear()
-                    }
-                }
-            }
-        },
         afterChange:function(changes,source){
             console.log("afterChange",changes,source)
-            //console.log(this.getData())
         },
-        afterSelectionEnd: function(row, col, row2, col2) {
+     afterSelectionEnd: function(row, col, row2, col2) {
             console.log("afterSelectionEnd",row,col,row2,col2)
-            console.log(this.hasHook("afterChange"))
-            this.removeHook("afterChange",function () {
-                console.log("removeHook")
-            });
-            console.log(this.hasHook("afterChange"))
-            this.setDataAtCell(row,col,"6")
-            //console.log("getCellEditor",this.getCellEditor(row,col))
-            this.readOnlyCellClassName = true;
-            this.render();
-        },
-    });
+         add(row,col,"deng")
+
+     },
+     afterRender:function (isForced) {
+         console.log("afterRender",isForced,selecteds)
+         showAll()
+     }
+ });
+
+
+
+    function add(row,column,name){
+        for (let i = 0;i < selecteds.length;i++){
+            let item = selecteds[i];
+            if (item.row === row && item.column ===column && item.name === name){
+                return
+            }
+        }
+        selecteds.push({row:row,column:column,name:name})
+        show(row,column,name,"red")
+    }
+
+    function remove(name) {
+        for (let i = 0;i < selecteds.length;i++){
+            let item = selecteds[i];
+            if (item.name === name){
+                selecteds.splice(i,1);
+                remove(name);
+                break
+            }
+        }
+    }
+
+    function show(row,column,name,color) {
+        let cell = hot.getCell(row,column);
+        if (cell){
+            let divElement = document.createElement("div")
+            divElement.innerHTML = name;
+            divElement.style.position = "absolute";
+            divElement.style.marginTop = "-23px";
+            divElement.style.marginLeft = "-4px";
+            divElement.style.paddingLeft = "5px";
+            divElement.style.zIndex = "1000";
+            divElement.style.height = "23px";
+            divElement.style.width = "auto";
+            divElement.style.color = "black";
+            divElement.style.background= color;
+            cell.appendChild(divElement)
+        }
+    }
+
+    function showAll() {
+        for (let i = 0; i < selecteds.length;i++){
+            let item = selecteds[i];
+            show(item.row,item.column,item.name,"red")
+        }
+    }
 
 </script>
 </body>

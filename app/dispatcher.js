@@ -141,12 +141,14 @@ dispatcher.handler["versionList"] = function(msg) {
 
 dispatcher.handler["lookHistory"] = function(msg) {
     handstable.setVersion(msg.version);
-    handstable.new(msg.data,true)
+    handstable.table = null;
+    handstable.new(msg.data,true);
     handstable.setStatue(StatusEnum.LOOK);
 };
 
 dispatcher.handler["backEditor"] = function(msg) {
     handstable.setVersion(msg.version);
+    handstable.table = null;
     handstable.new(msg.data);
     handstable.setStatue(StatusEnum.EDITOR);
 };

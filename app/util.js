@@ -20,7 +20,7 @@ util.alert = function (msg) {
 // 字符串格式化
 util.format = function(src){
     if (arguments.length == 0) return null;
-    var args = Array.prototype.slice.call(arguments, 1);
+    let args = Array.prototype.slice.call(arguments, 1);
     return src.replace(/\{(\d+)\}/g, function(m, i){
         return args[i];
     });
@@ -29,22 +29,23 @@ util.format = function(src){
 // url
 util.getUrlParam =  function(name) {
     let reg = new RegExp('(^|&)'+ name + '=([^&]*)(&|$)');
-    let r = window.location.search.substr(1).match(reg);
-    if(r!=null){
-        return unescape(r[2])
-    }
-    return null
+    let result= window.location.search.substr(1).match(reg);
+    return result?decodeURIComponent(result[2]):null;
 };
 
 util.getColor = function(idx) {
-    let colr = util.colors[idx%util.colors.length];
+    return  util.colors[idx%util.colors.length];
+};
+
+util.makeBorderStyle = function(colr){
     return {right:{width: 2,color:colr},left:{width: 2,color:colr},
-        top:{width: 2,color:colr,text:"sssss"},bottom:{width: 2,color:colr}};
-}
+        top:{width: 2,color:colr},bottom:{width: 2,color:colr}};
+};
+
 
 //弹出一个输入框，输入一段文字，可以提交
 util.prom = function(msg) {
-    var name = prompt(msg, "");
+    let name = prompt(msg, "");
     if (name){
         return name
     }
