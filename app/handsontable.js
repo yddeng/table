@@ -147,8 +147,8 @@ handstable.new = function(data,isReadOnly){
         },
         afterChange:function(changes,source){
             if (changes){
-                var cellValues = new Array();
-                for (var i = 0;i < changes.length;i++){
+                let cellValues = new Array();
+                for (let i = 0;i < changes.length;i++){
                     let item = changes[i];
                     //console.log("change",item)
                     if (item[2] != null && item[2] != ""){
@@ -217,7 +217,7 @@ handstable.setSelected = function(name,selected){
     // 将上一次选中清空
     let value = handstable.selected[name];
     if (value){
-        let lastSelected = value.selected
+        let lastSelected = value.selected;
         handstable.customBordersPlugin.clearBorders([[lastSelected.row,lastSelected.col,lastSelected.row2,lastSelected.col2]]);
 
         let cell = handstable.table.getCell(lastSelected.row,lastSelected.col);
@@ -243,17 +243,9 @@ handstable.setSelected = function(name,selected){
 
 handstable.makeDiv = function(name,color) {
     let divElement = document.createElement("div")
-    divElement.innerHTML = name;
-    divElement.style.position = "absolute";
-    divElement.style.marginTop = "-23px";
-    divElement.style.marginLeft = "-5px";
-    divElement.style.paddingLeft = "5px";
-    divElement.style.paddingRight = "5px";
-    divElement.style.zIndex = "1000";
-    divElement.style.height = "23px";
-    divElement.style.width = "auto";
-    divElement.style.color = "black";
-    divElement.style.background= color;
+    divElement.className = "showUser";
+    divElement.style.background = color;
+    divElement.innerHTML = util.format(`<span>{0}</span>`,name);
     return divElement
 };
 

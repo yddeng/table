@@ -62,7 +62,7 @@ function backEditor() {
 }
 
 function rollback(v) {
-    var ev=ev||event;
+    let ev=ev||event;
     if(ev && ev.stopPropagation){
         ev.stopPropagation();  //非IE下 它支持W3C的stopPropagation()方法
     } else {
@@ -76,7 +76,7 @@ var dispatcher = {};
 dispatcher.handler = {};
 
 dispatcher.DispatchMessage = function(msg) {
-    var handler = dispatcher.handler[msg.cmd];
+    let handler = dispatcher.handler[msg.cmd];
     console.log("DispatchMessage",msg);
     if(handler){
         handler(msg);

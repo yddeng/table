@@ -25,13 +25,13 @@ socket.onopen = function(){
 };
 
 socket.onmessage = function(evt){
-    var msg = JSON.parse(evt.data);
+    let msg = JSON.parse(evt.data);
     dispatcher.DispatchMessage(msg);
 };
 
 socket.onclose = function(e) {
     if(socket.ws) {
-        var ws = socket.ws;
+        let ws = socket.ws;
         socket.ws = null;
         ws.close();
         console.log(e)
