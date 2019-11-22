@@ -1,25 +1,31 @@
 # http
-## 创建表 
-req  createTable?tableName=xxx&userName=xxx
+## 创建表 post
+req  createTable {tableName:string,describe:string,token:string}
 resp ok= 1/0
      msg= string
 
-## 删除表 
-req  deleteTable?tableName=xxx&userName=xxx
+## 删除表 post
+req  deleteTable {tableName:string,token:string}
 resp ok= 1/0
      msg= string
 
-## 表列表 
+## 表列表 get
 req  getAllTable
 resp ok= 1/0
      msg= string
      tables = []{tableName:string,version:int}
 
-## 下载
-req  downloadTable?tableName=xxx&userName=xxx
+## 下载 post
+req  downloadTable  {tableName:string,token:string}
 resp ok= 1/0
      msg= string
      data = [][]string
+     
+## 登陆 post
+req login {userName:string,password:string}
+resp ok  = 1/0
+     msg = string
+     token = string
         
 #websocket
 ## pushAll 推送所有数据

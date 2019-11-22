@@ -1,7 +1,6 @@
 package pgsql
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -83,52 +82,4 @@ VALUES (%s);`
 	}
 	_, err = smt.Exec(args...)
 	return err
-}
-
-type SelectClient struct {
-	sql    string
-	fields []string
-	smt    *sql.Stmt
-}
-
-func (this *SelectClient) Query(rb func(map[string]interface{}, error), args ...interface{}) {
-	row := this.smt.QueryRow(args...)
-	mid := make([]interface{}, len(this.fields))
-	l := "&mid[0],&mid[1],&mid[2]"
-	err := row.Scan(l)
-	if err != nil {
-		rb(nil, err)
-		return
-	}
-
-	ret := map[string]interface{}{}
-	for i, v := range this.fields {
-		ret[v] = mid[i]
-	}
-	rb(ret, nil)
-}
-
-func NewSelect(tableName, fields string, key ...string) (*SelectClient, error) {
-	tmp := `
-SELECT %s FROM %s
-`
-	sqlStr := ""
-	if len(key) > 0 {
-		tmp += `WHERE %s=$1;`
-		sqlStr = fmt.Sprintf(tmp, fields, tableName, key[0])
-	} else {
-		tmp += `;`
-		sqlStr = fmt.Sprintf(tmp, fields, tableName)
-	}
-
-	smt, err := dbConn.Prepare(sqlStr)
-	if err != nil {
-		return nil, err
-	}
-	fields_ := strings.Split(fields, ",")
-	return &SelectClient{
-		sql:    sqlStr,
-		fields: fields_,
-		smt:    smt,
-	}, nil
 }

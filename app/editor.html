@@ -7,6 +7,7 @@
 	<script src="dist/handsontable.full.js"></script>
 	<script src="dist/xlsx.full.min.js"></script>
 	<script src="./websocket.js"></script>
+	<script src="./config.js"></script>
 	<script src="./handsontable.js"></script>
 	<script src="./dispatcher.js"></script>
 	<script src="./util.js"></script>
@@ -219,14 +220,14 @@
 <script>
 
 	let tableName = util.getUrlParam("tableName");
-	let userName = util.getUrlParam("userName");
-	console.log(tableName,userName);
-	if (tableName != null && userName !=null){
-		socket.init(tableName,userName);
+	let token = util.getUrlParam("token");
+	console.log(tableName,token);
+	if (tableName != null && token !=null){
+		socket.init(tableName,token);
 
 		document.title = tableName;
 		let user = document.getElementById('user');
-		user.innerHTML = userName;
+		user.innerHTML = util.tokenName(token);
 		let file = document.getElementById('tableName');
 		file.innerHTML = tableName;
 

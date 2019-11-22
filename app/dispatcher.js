@@ -1,6 +1,6 @@
 
-function openTable(tableName,userName) {
-    socket.send({cmd:'openTable',tableName:tableName,userName:userName});
+function openTable(tableName,token) {
+    socket.send({cmd:'openTable',tableName:tableName,token:token});
 }
 
 function insertRow(idx) {

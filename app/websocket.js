@@ -1,14 +1,13 @@
 var socket = socket || {};
 
 socket.ws = null;
-socket.url = "ws://10.128.2.123:4545/table";
-socket.fileName = null;
-socket.userName = null;
+socket.tableName = null;
+socket.token = null;
 
-socket.init = function(fileName,userName){
-    socket.fileName = fileName;
-    socket.userName = userName;
-    socket.connect(socket.url)
+socket.init = function(tableName,token){
+    socket.tableName = tableName;
+    socket.token = token;
+    socket.connect(wsAddr)
 };
 
 socket.connect = function(url) {
@@ -19,9 +18,8 @@ socket.connect = function(url) {
 };
 
 socket.onopen = function(){
-    console.log("connect ok");
-    console.log(socket.url,socket.fileName,socket.userName)
-    openTable(socket.fileName,socket.userName)
+    console.log("connect ok",socket.tableName,socket.token);
+    openTable(socket.tableName,socket.token)
 };
 
 socket.onmessage = function(evt){
@@ -40,9 +38,9 @@ socket.onclose = function(e) {
 
 socket.send = function(msg) {
     if(socket.ws) {
-        console.log("send",msg)
+        console.log("send",msg);
         return socket.ws.send(JSON.stringify(msg));
     }else {
-        socket.connect(this.url)
+        socket.connect(wsAddr)
     }
 };

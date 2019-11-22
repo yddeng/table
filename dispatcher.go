@@ -39,7 +39,9 @@ func Dispatcher(msg map[string]interface{}, session kendynet.StreamSession) {
 func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
 	var err error
 	tableName := req["tableName"].(string)
-	userName := req["userName"].(string)
+	token := req["token"].(string)
+	_, userName := processToken(token)
+
 	table, ok := tables[tableName]
 	if !ok {
 		table, err = OpenTable(tableName)

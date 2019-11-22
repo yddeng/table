@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
 	"testing"
+	"time"
 )
 
 func TestCreateTable(t *testing.T) {
@@ -43,12 +44,10 @@ func TestUpdateTableData(t *testing.T) {
 	fmt.Println(v, d, err)
 }
 
-func TestNewSelect(t *testing.T) {
-	c, err := NewSelect("table_data", "version,date,describe", "table_name")
-	fmt.Println(err)
-	if err == nil {
-		c.Query(func(i map[string]interface{}, e error) {
-			fmt.Println(i, e)
-		}, "test")
-	}
+func TestAllUser(t *testing.T) {
+	ret, err := AllUser()
+	fmt.Println(ret, err)
+	pwd, per, err := LoadUser("deng")
+	fmt.Println(pwd, per, err)
+	fmt.Println(time.Now().UnixNano())
 }

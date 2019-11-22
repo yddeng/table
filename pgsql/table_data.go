@@ -52,7 +52,7 @@ WHERE table_name = '%s';`
 func LoadTableData(tableName string) (string, int, string, [][]string, error) {
 	sqlStatement := `
 SELECT describe,version,date,data FROM table_data 
-WHERE table_name=$1;`
+WHERE table_name = $1;`
 
 	var desc, date, dataStr string
 	var version int

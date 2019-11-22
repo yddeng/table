@@ -53,8 +53,9 @@ func Start(path string) {
 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir(_conf.LoadDir))))
 
 	// http handler
+	http.HandleFunc("/login", HandleLogin)
 	http.HandleFunc("/createTable", HandleCreateTable)
-	http.HandleFunc("/deleteTable", HandleDeleteTable)
+	//http.HandleFunc("/deleteTable", HandleDeleteTable)
 	http.HandleFunc("/getAllTable", HandleGetAllTable)
 	http.HandleFunc("/downloadTable", HandleDownloadTable)
 	fmt.Printf("http start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)

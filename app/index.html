@@ -2,14 +2,21 @@
 <html>
 <head>
     <meta charset='utf-8'>
-    <title>Editor</title>
+    <title>Index</title>
     <script src="dist/jquery.min.js"></script>
     <script src="dist/xlsx.full.min.js"></script>
+    <script src="config.js"></script>
     <script src="util.js"></script>
     <style>
         body{
             margin: 0 auto;
             background: #F2F3F4 ;
+        }
+        #user{
+            position: absolute;
+            left: 10%;
+            top: 40px;
+            width: 80%;
         }
         #header{
             width: 100%;
@@ -61,7 +68,6 @@
             width: 50px;
         }
 
-        /* 公告 */
         .newTable {
             display: none;
             position: absolute;
@@ -83,21 +89,44 @@
             left: 40%;
             padding: 10px;
             background-color: #95A5A6;
+            z-index: 1010;
+        }
+
+        .login{
+            display: none;
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            width: 500px;
+            height: 200px;
+            padding: 20px;
+            border: 1px solid #A6ACAF;
+            background-color: white;
             z-index: 1002;
+            overflow: auto;
         }
 
     </style>
 </head>
 <body>
+<div id="login" class="login">
+    <input id="userName" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="用户名">
+    <br><br>
+    <input id="password" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="密码">
+    <br><br>
+    <button onclick="login()" >登陆</button>
+</div>
 <div id="tips" class="tips"><span id="tips-msg"></span></div>
 <div id="newTable" class="newTable">
     <input id="new_name" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="表名(*必填)">
     <br><br>
     <input id="new_describe" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="描述(选填)">
     <br><br>
-    <button onclick="document.getElementById('newTable').style.display='none';createTable()" >ok</button>
+    <button onclick="createTable()" >ok</button>
 </div>
-<div id="header"></div>
+<div id="header">
+    <div id="user"></div>
+</div>
 <div>
     <div id="menu">
         &nbsp;&nbsp;<button style="width: 100px;height: 50px" onclick="document.getElementById('newTable').style.display='block';">新建表格</button>
@@ -115,12 +144,48 @@
     </div>
 </div>
 <script>
-    const url = "http://10.128.2.123:4545";
-    let userName = "";
+    let token = "";
     window.onload = function () {
-        userName = util.prom("请输入您的名字");
-        getAllTable()
+        getAllTable();
+        let userElem = document.getElementById("user");
+        token = util.getCookie("token");
+        if (token != ""){
+            let uname = util.tokenName(token);
+            loginOk(uname)
+        }else {
+            let str = `未登陆<button onclick=\"document.getElementById('login').style.display='block';\">登陆</button>`;
+            userElem.innerHTML = str;
+        }
     };
+
+    function loginOk(uname) {
+        document.getElementById('login').style.display='none';
+        let userElem = document.getElementById("user");
+        let str = `{0},已登陆<button onclick=\"document.getElementById('login').style.display='block';\">切换</button>`
+        userElem.innerHTML = util.format(str,uname);
+    }
+
+    function login() {
+        let uname = document.getElementById("userName").value;
+        let pwd = document.getElementById("password").value;
+        if (!uname || !pwd ){
+            showTips("请输入完整的账号密码",2000)
+            return
+        }
+        let hurl = httpAddr+"/login";
+        let data = {userName:uname,password:pwd};
+        util.httpPost(hurl,data,function (res) {
+            if(res.ok === 1){
+                showTips("登陆成功",2000)
+                util.setCookie("token",res.token,7);
+                loginOk(uname)
+            }else{
+                showTips(res.msg,2000)
+            }
+        },function (e){
+            showTips("网络错误",2000)
+        })
+    }
 
     function showTips(msg,t) {
         let tip = document.getElementById('tips');
@@ -132,82 +197,73 @@
     }
 
     function createTable() {
-        if (!userName){
-            userName = util.prom("请输入您的名字")
+        if (token === ""){
+            showTips("请先登录",2000);
             return
         }
         let tableName = document.getElementById("new_name").value;
         let describe = document.getElementById("new_describe").value;
-        console.log("fsf",tableName,describe)
         if (!tableName){
             showTips("请输入表名",3000);
             return
         }
-        let req = url+"/createTable?tableName="+tableName+"&userName="+userName+"&describe="+describe;
-        $.ajax({
-            url:req,
-            type: "get",
-            async: true,
-            success: function (res) {
-                if(res.ok === 1){
-                    getAllTable()
-                }else{
-                    showTips(res.msg,2000)
-                }
-            },
-            error: function (e){
+
+        let url = httpAddr + "/createTable";
+        let data = {tableName:tableName,describe:describe,token:token};
+        util.httpPost(url,data,function (res) {
+            if(res.ok === 1){
+                document.getElementById('newTable').style.display='none';
+                getAllTable()
+            }else{
+                showTips(res.msg,2000)
             }
-        });
+            },function (e){
+            showTips("网络错误",2000)
+        })
+
     }
 
     function download(tableName) {
-        if (!userName){
-            userName = util.prom("请输入您的名字")
+        if (token === ""){
+            showTips("请先登录",2000);
             return
         }
-        let req = url+"/downloadTable?tableName="+tableName+"&userName="+userName;
-        $.ajax({
-            url:req,
-            type: "get",
-            async: true,
-            success: function (res) {
-                if(res.ok === 1){
-                    let ws =  XLSX.utils.aoa_to_sheet(res.data);
-                    let wb = XLSX.utils.book_new();
-                    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-                    XLSX.writeFile(wb, util.format("{0}.xlsx",tableName))
-                }else{
-                    showTips(res.msg,2000)
-                }
+        let url = httpAddr + "/downloadTable";
+        let data = {tableName:tableName,token:token};
+        util.httpPost(url,data,function (res) {
+            if(res.ok === 1){
+                let ws =  XLSX.utils.aoa_to_sheet(res.data);
+                let wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+                XLSX.writeFile(wb, util.format("{0}.xlsx",tableName))
+            }else{
+                showTips(res.msg,2000)
             }
+        },function (e){
+            showTips("网络错误",2000)
         });
     }
 
     function openTable(tableName){
-        let req = url+"/editor.html?tableName="+tableName+"&userName="+userName;
-        if (!userName){
-            userName = util.prom("请输入您的名字")
-        }else {
-            window.location.href = req;
+        if (token === ""){
+            showTips("请先登录",2000);
+            return
         }
+        let req = httpAddr+"/editor.html?tableName="+tableName+"&token="+token;
+        window.location.href = req;
     }
 
     function getAllTable() {
-        let req = url+"/getAllTable";
-        $.ajax({
-            url:req,
-            type: "get",
-            async: true,
-            success: function (res) {
-                if(res.ok === 1){
-                    console.log(res);
-                    showItem(res.tables)
-                }else{
-                    showTips(res.msg,2000)
-                }
-            },
-            error: function (e){
+        let req = httpAddr+"/getAllTable";
+        util.httpGet(req,function (res) {
+            if(res.ok === 1){
+                console.log(res);
+                showItem(res.tables)
+            }else{
+                showTips(res.msg,2000)
             }
+        },function (e){
+            showTips("网络错误",2000)
         });
     }
 
@@ -222,7 +278,7 @@
                     <button onclick="openTable('{5}')">编辑</button>
                 </div>
             </div>
-<hr>`
+<hr>`;
         let list = document.getElementById('item-list');
         list.innerHTML = "";
         let str = "";

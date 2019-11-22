@@ -51,6 +51,54 @@ util.prom = function(msg) {
     }
 };
 
+// 设置cookie的函数  （名字，值，过期时间（天））
+util.setCookie = function (cname, cvalue, exdays) {
+    let d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    let expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + "; " + expires;
+};
+
+//获取cookie
+//取cookie的函数(名字) 取出来的都是字符串类型 子目录可以用根目录的cookie，根目录取不到子目录的 大小4k左右
+util.getCookie = function(cname) {
+    let name = cname + "=";
+    let ca = document.cookie.split(';');
+    for(let i=0; i<ca.length; i++)
+    {
+        let c = ca[i].trim();
+        if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+    }
+    return "";
+};
+
+util.tokenName = function(token){
+    let name = token.split("@")[1];
+    return name
+};
+
+util.httpGet = function(url,success,error){
+    $.ajax({
+        url:url,
+        type: "get",
+        async: true,
+        success: success,
+        error: error
+    });
+};
+
+util.httpPost = function(url,data,success,error){
+    $.ajax({
+        url:url,
+        type: "post",
+        async: true,
+        dataType: "json",
+        data:data,
+        success: success,
+        error: error
+    });
+};
+
 //弹出一个询问框，有确定和取消按钮
 function firm() {
     //利用对话框返回的值 （true 或者 false）

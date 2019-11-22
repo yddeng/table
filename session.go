@@ -62,7 +62,7 @@ func OnClose(sess kendynet.StreamSession, reason string) {
 		fmt.Printf("user:%s onclose %s\n", session.UserName, reason)
 		session.Table.RemoveSession(session)
 		session.Table = nil
-		delete(sessionMap, sess.RemoteAddr().String())
+		delete(sessionMap, session.RemoteAddr())
 	} else {
 		fmt.Printf("session:%s onclose %s\n", sess.RemoteAddr().String(), reason)
 	}

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/yddeng/table/pgsql"
 	"net/http"
+	"net/url"
+	"strings"
 )
 
 // 创建文件
@@ -17,26 +19,21 @@ func HandleCreateTable(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
 	w.Header().Set("content-type", "application/json")             //返回数据格式是json
 
-	var tableName, userName, desc string
-	if t, ok := r.Form["tableName"]; ok {
-		tableName = t[0]
+	req := map[string]string{
+		"tableName": "",
+		"describe":  "",
+		"token":     "",
 	}
-
-	if p, ok := r.Form["userName"]; ok {
-		userName = p[0]
-	}
-
-	if p, ok := r.Form["describe"]; ok {
-		desc = p[0]
-	}
-
-	if tableName == "" || userName == "" {
-		httpErr("参数错误", w)
+	err := checkForm(r.Form, req)
+	if err != nil {
+		httpErr(err.Error(), w)
 		return
 	}
 
+	tableName := req["tableName"]
+	desc := req["describe"]
 	// 判断名字是否存在
-	_, _, _, _, err := pgsql.LoadTableData(tableName)
+	_, _, _, _, err = pgsql.LoadTableData(tableName)
 	if err == nil {
 		httpErr("名字重复", w)
 		return
@@ -59,7 +56,7 @@ func HandleCreateTable(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"ok": 1,
 	}); err != nil {
-		logger.Errorf("http resp err:", err)
+		logger.Errorln("http resp err:", err)
 	}
 }
 
@@ -73,24 +70,22 @@ func HandleDeleteTable(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
 	w.Header().Set("content-type", "application/json")             //返回数据格式是json
 
-	var tableName, userName string
-	if t, ok := r.Form["tableName"]; ok {
-		tableName = t[0]
+	req := map[string]string{
+		"tableName": "",
+		"token":     "",
 	}
-
-	if p, ok := r.Form["userName"]; ok {
-		userName = p[0]
-	}
-
-	if tableName == "" || userName == "" {
-		httpErr("参数错误", w)
+	err := checkForm(r.Form, req)
+	if err != nil {
+		httpErr(err.Error(), w)
 		return
 	}
+
+	// todo
 
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"ok": 1,
 	}); err != nil {
-		logger.Errorf("http resp err:", err)
+		logger.Errorln("http resp err:", err)
 	}
 }
 
@@ -114,30 +109,31 @@ func HandleGetAllTable(w http.ResponseWriter, r *http.Request) {
 		"ok":     1,
 		"tables": ret,
 	}); err != nil {
-		logger.Errorf("http resp err:", err)
+		logger.Errorln("http resp err:", err)
 	}
 }
 
 // 下载excel
 func HandleDownloadTable(w http.ResponseWriter, r *http.Request) {
 	_ = r.ParseForm()
-	logger.Infoln("HandleGetAllTable request", r.Method, r.Form)
+	logger.Infoln("HandleDownloadTable request", r.Method, r.Form)
 
 	//跨域
 	w.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
 	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
 	w.Header().Set("content-type", "application/json")             //返回数据格式是json
 
-	var tableName string
-	if t, ok := r.Form["tableName"]; ok {
-		tableName = t[0]
+	req := map[string]string{
+		"tableName": "",
+		"token":     "",
 	}
-
-	if tableName == "" {
-		httpErr("参数错误", w)
+	err := checkForm(r.Form, req)
+	if err != nil {
+		httpErr(err.Error(), w)
 		return
 	}
 
+	tableName := req["tableName"]
 	_, _, _, data, err := pgsql.LoadTableData(tableName)
 	if err != nil {
 		httpErr(err.Error(), w)
@@ -152,13 +148,66 @@ func HandleDownloadTable(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// login登陆
+func HandleLogin(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	logger.Infoln("HandleLogin request", r.Method, r.Form)
+
+	//跨域
+	w.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
+	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
+	w.Header().Set("content-type", "application/json")             //返回数据格式是json
+
+	req := map[string]string{
+		"userName": "",
+		"password": "",
+	}
+	err := checkForm(r.Form, req)
+	if err != nil {
+		httpErr(err.Error(), w)
+		return
+	}
+
+	userName := req["userName"]
+	password := req["password"]
+	pwd, _, err := pgsql.LoadUser(userName)
+	if err != nil {
+		httpErr("该用户不存在", w)
+		return
+	}
+
+	if strings.Compare(pwd, password) != 0 {
+		httpErr("密码错误", w)
+		return
+	}
+
+	token := makeToken(userName)
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":    1,
+		"token": token,
+	}); err != nil {
+		logger.Errorf("http resp err:", err)
+	}
+}
+
+func checkForm(form url.Values, args map[string]string) error {
+	for k := range args {
+		if t, ok := form[k]; ok {
+			args[k] = t[0]
+		} else {
+			return fmt.Errorf("key:%s not found\n", k)
+		}
+	}
+	return nil
+}
+
 func httpErr(err string, w http.ResponseWriter) {
-	fmt.Println("httpErr", err)
+	logger.Errorln("httpErr", err)
 	resp := map[string]interface{}{
 		"ok":  0,
 		"msg": err,
 	}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		logger.Errorf("http resp err:", err)
+		logger.Errorln("http resp err:", err)
 	}
 }
