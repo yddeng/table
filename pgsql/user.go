@@ -8,7 +8,7 @@ import (
 //
 func InsertUser(uerName, pwd, per string) error {
 	sqlStr := `
-INSERT INTO "user" (user_name, password,permission,)
+INSERT INTO "user" (user_name, password,permission)
 VALUES ('%s','%s','%s');`
 
 	sqlStatement := fmt.Sprintf(sqlStr, uerName, pwd, per)

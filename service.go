@@ -58,6 +58,9 @@ func Start(path string) {
 	//http.HandleFunc("/deleteTable", HandleDeleteTable)
 	http.HandleFunc("/getAllTable", HandleGetAllTable)
 	http.HandleFunc("/downloadTable", HandleDownloadTable)
+
+	// user
+	http.HandleFunc("/addUser", HandleAddUser)
 	fmt.Printf("http start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)
 	err = http.ListenAndServe(_conf.HttpAddr, nil)
 	if err != nil {

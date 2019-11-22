@@ -83,3 +83,27 @@ VALUES (%s);`
 	_, err = smt.Exec(args...)
 	return err
 }
+
+func Select(tableName string, fields map[string]interface{}) error {
+	sqlStr := `
+SELECT INTO "%s" (%s)
+VALUES (%s);`
+
+	keys, values := []string{}, []string{}
+	args := []interface{}{}
+	var i = 1
+	for k, v := range fields {
+		keys = append(keys, k)
+		values = append(values, fmt.Sprintf("$%d", i))
+		i++
+		args = append(args, v)
+	}
+
+	sqlStatement := fmt.Sprintf(sqlStr, tableName, strings.Join(keys, ","), strings.Join(values, ","))
+	smt, err := dbConn.Prepare(sqlStatement)
+	if err != nil {
+		return err
+	}
+	_, err = smt.Exec(args...)
+	return err
+}

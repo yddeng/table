@@ -92,7 +92,7 @@
             z-index: 1010;
         }
 
-        .login{
+        .login, .register{
             display: none;
             position: absolute;
             top: 20%;
@@ -116,7 +116,17 @@
     <br><br>
     <button onclick="login()" >登陆</button>
 </div>
+
+<div id="register" class="register">
+    <input id="reg_name" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="用户名(尽力使用真实姓名)">
+    <br><br>
+    <input id="reg_password" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="密码">
+    <br><br>
+    <button onclick="register()" >注册</button>
+</div>
+
 <div id="tips" class="tips"><span id="tips-msg"></span></div>
+
 <div id="newTable" class="newTable">
     <input id="new_name" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="表名(*必填)">
     <br><br>
@@ -124,6 +134,7 @@
     <br><br>
     <button onclick="createTable()" >ok</button>
 </div>
+
 <div id="header">
     <div id="user"></div>
 </div>
@@ -153,7 +164,9 @@
             let uname = util.tokenName(token);
             loginOk(uname)
         }else {
-            let str = `未登陆<button onclick=\"document.getElementById('login').style.display='block';\">登陆</button>`;
+            let str = `未登陆
+<button onclick=\"document.getElementById('login').style.display='block';\">登陆</button>
+<button onclick=\"document.getElementById('register').style.display='block';\">注册</button>`;
             userElem.innerHTML = str;
         }
     };
@@ -161,7 +174,8 @@
     function loginOk(uname) {
         document.getElementById('login').style.display='none';
         let userElem = document.getElementById("user");
-        let str = `{0},已登陆<button onclick=\"document.getElementById('login').style.display='block';\">切换</button>`
+        let str = `{0},已登陆
+<button onclick=\"document.getElementById('login').style.display='block';\">切换</button>`
         userElem.innerHTML = util.format(str,uname);
     }
 
@@ -169,7 +183,7 @@
         let uname = document.getElementById("userName").value;
         let pwd = document.getElementById("password").value;
         if (!uname || !pwd ){
-            showTips("请输入完整的账号密码",2000)
+            showTips("用户名或密码不能为空",2000)
             return
         }
         let hurl = httpAddr+"/login";
@@ -178,6 +192,29 @@
             if(res.ok === 1){
                 showTips("登陆成功",2000)
                 util.setCookie("token",res.token,7);
+                loginOk(uname)
+            }else{
+                showTips(res.msg,2000)
+            }
+        },function (e){
+            showTips("网络错误",2000)
+        })
+    }
+
+    function register() {
+        let uname = document.getElementById("reg_name").value;
+        let pwd = document.getElementById("reg_password").value;
+        if (!uname || !pwd ){
+            showTips("用户名或密码不能为空",2000)
+            return
+        }
+        let hurl = httpAddr+"/addUser";
+        let data = {userName:uname,password:pwd};
+        util.httpPost(hurl,data,function (res) {
+            if(res.ok === 1){
+                showTips("注册成功",2000)
+                util.setCookie("token",res.token,7);
+                document.getElementById('register').style.display='none';
                 loginOk(uname)
             }else{
                 showTips(res.msg,2000)

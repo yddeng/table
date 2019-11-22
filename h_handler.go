@@ -190,6 +190,49 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 添加用户
+func HandleAddUser(w http.ResponseWriter, r *http.Request) {
+	_ = r.ParseForm()
+	logger.Infoln("HandleAddUser request", r.Method, r.Form)
+
+	//跨域
+	w.Header().Set("Access-Control-Allow-Origin", "*")             //允许访问所有域
+	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
+	w.Header().Set("content-type", "application/json")             //返回数据格式是json
+
+	req := map[string]string{
+		"userName": "",
+		"password": "",
+	}
+	err := checkForm(r.Form, req)
+	if err != nil {
+		httpErr(err.Error(), w)
+		return
+	}
+
+	userName := req["userName"]
+	password := req["password"]
+	_, _, err = pgsql.LoadUser(userName)
+	if err == nil {
+		httpErr("用户名已存在", w)
+		return
+	}
+
+	err = pgsql.InsertUser(userName, password, "")
+	if err != nil {
+		httpErr(err.Error(), w)
+		return
+	}
+
+	token := makeToken(userName)
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
+		"ok":    1,
+		"token": token,
+	}); err != nil {
+		logger.Errorf("http resp err:", err)
+	}
+}
+
 func checkForm(form url.Values, args map[string]string) error {
 	for k := range args {
 		if t, ok := form[k]; ok {
