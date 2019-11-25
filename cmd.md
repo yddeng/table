@@ -170,3 +170,26 @@ cmd    : "rollback"
 now    : int  // 当前版本
 goto   : int  // 回退到的版本
 ```
+
+## 用户进入，退出 toc
+```
+cmd  : "userEnter"
+userName : string      
+```
+
+```
+cmd  : "userLeave"
+userName : string      
+```
+
+## 聊天消息
+```
+cmd : "talk"
+msg: string
+```
+toc
+```
+cmd : "talk"
+userName: string,
+msg: string
+```

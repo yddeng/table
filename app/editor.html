@@ -150,12 +150,28 @@
 			top: 25%;
 			left: 40%;
 			/*max-width: 20%;*/
-			/*max-height: 50%;;*/
+			max-height: 50%;
 			padding: 10px;
 			background-color: #95A5A6;
 			z-index: 1002;
+			overflow: auto;
 		}
 
+		.chat-idle{
+			position: fixed;
+			bottom: 0px;
+			right: 20px;
+			width: 320px;
+			/*height: 40px;*/
+			border-radius: 10px;
+			background-color: #85C1E9 ;
+			z-index: 1002;
+		}
+		#chat-div-head::after{
+			content:"...";
+			font-weight:bold;
+			position:absolute;
+		}
 	</style>
 </head>
 <body>
@@ -165,6 +181,14 @@
 	<div id="history-div-nav"></div>
 </div>
 <div id="fade" class="black_overlay"></div>
+<div id="chat" class="chat-idle">
+	<div id="chat-div-head" style="color: black;cursor: pointer;padding: 10px;height: 26px;width: 300px;
+	 white-space: nowrap; text-overflow: ellipsis;overflow: hidden;" onclick="chatHeadOnClick()"></div>
+	<div id="chat-div-message" style="display: none;background-color: #ECF0F1;padding: 8px;height: 320px;overflow:auto;"></div>
+	<div id="chat-div-input" style="display: none;padding: 10px">
+		<TEXTAREA id="chat-input" type="text" placeholder="说一句(回车发送)" onkeydown="talk()" style="width:290px;height: 36px;padding: 2px;resize:none;"></TEXTAREA>
+	</div>
+</div>
 <div id="notion" class="notion">
 	<a href = "javascript:void(0)" style="margin-left: 95%" onclick = "document.getElementById('notion').style.display='none';">关闭</a>
 	<hr>
@@ -254,6 +278,37 @@
 		// Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
 		return '关闭提示';
 	};
+
+	function chatHead(txt) {
+		let headDiv = document.getElementById("chat-div-head");
+		headDiv.innerText = txt;
+	}
+
+	function talkMsg(msg) {
+		let sp = document.createElement("span");
+		sp.innerText = util.format(`{0} {1}\n{2}\n`,msg.userName,util.localTime(),msg.msg);
+		let msgDiv = document.getElementById("chat-div-message");
+		msgDiv.appendChild(sp)
+
+		let inputDiv = document.getElementById("chat-div-input");
+		if (msgDiv.style.display === "none" ){
+			msgDiv.style.display = "block";
+			inputDiv.style.display = "block" ;
+		}
+	}
+	
+	function chatHeadOnClick() {
+		let msgDiv = document.getElementById("chat-div-message");
+		let inputDiv = document.getElementById("chat-div-input");
+		if (msgDiv.style.display === "block" ){
+			msgDiv.style.display = "none";
+			inputDiv.style.display = "none" ;
+		}else {
+			msgDiv.style.display = "block";
+			inputDiv.style.display = "block" ;
+		}
+
+	}
 
 </script>
 </body>

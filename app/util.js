@@ -51,6 +51,11 @@ util.prom = function(msg) {
     }
 };
 
+util.localTime = function(){
+    let myDate = new Date();
+    return myDate.toLocaleString()
+};
+
 // 设置cookie的函数  （名字，值，过期时间（天））
 util.setCookie = function (cname, cvalue, exdays) {
     let d = new Date();

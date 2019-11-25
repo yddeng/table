@@ -71,6 +71,18 @@ function rollback(v) {
     socket.send({cmd:"rollback",version:v})
 }
 
+function talk() {
+    if (event.keyCode == 13){
+        event.preventDefault();//屏蔽enter对系统作用。按后增加\r\n等换行
+        let inp = document.getElementById("chat-input");
+        let txt = inp.value;
+        if (txt !== "") {
+            inp.value = "";
+            socket.send({cmd: "talk",msg:txt})
+        }
+    }
+}
+
 /*****************************************************************************************/
 var dispatcher = {};
 dispatcher.handler = {};
@@ -98,6 +110,10 @@ dispatcher.handler["pushAll"] = function(msg) {
 dispatcher.handler["openTable"] = function(msg) {
     handstable.new(msg.data);
     handstable.setVersion(msg.version);
+
+    let txt = util.tokenName(socket.token)+"、";
+    txt += util.format("等{0}人在线",Object.keys(handstable.userColor).length+1);
+    chatHead(txt)
 };
 
 dispatcher.handler["cellSelected"] = function(msg) {
@@ -157,4 +173,54 @@ dispatcher.handler["rollback"] = function(msg) {
     handstable.setVersion(msg.version);
     handstable.table.loadData(msg.data);
     showTips(util.format("版本已还原至:{0}",msg.version),3000);
+};
+
+dispatcher.handler["userEnter"] = function(msg) {
+    //showTips(msg.userName,2000);
+    // 添加用户
+    let len = Object.keys(handstable.userColor).length;
+    let colr = util.getColor(len);
+    //console.log(len,colr);
+    handstable.userColor[msg.userName] = colr;
+
+    let txt = util.tokenName(socket.token)+"、";
+    $.each(handstable.userColor, function(name,value){
+        txt += name+"、"
+    });
+    txt += util.format("等{0}人在线",Object.keys(handstable.userColor).length+1);
+    chatHead(txt)
+};
+
+dispatcher.handler["userLeave"] = function(msg) {
+    //showTips(msg.userName,2000);
+    let name = msg.userName;
+    // 清空用户
+    let value = handstable.selected[name];
+    if (value){
+        let lastSelected = value.selected;
+        handstable.customBordersPlugin.clearBorders([[lastSelected.row,lastSelected.col,lastSelected.row2,lastSelected.col2]]);
+
+        let cell = handstable.table.getCell(lastSelected.row,lastSelected.col);
+        if (cell){
+            cell.removeChild(value.div)
+        }
+        delete handstable.selected[name];
+    }
+
+    let colr = handstable.userColor[name];
+    if (colr){
+        //console.log(colr)
+        delete handstable.userColor[name];
+    }
+
+    let txt = util.tokenName(socket.token)+"、";
+    $.each(handstable.userColor, function(name,value){
+        txt += name+"、"
+    });
+    txt += util.format("等{0}人在线",Object.keys(handstable.userColor).length+1);
+    chatHead(txt)
+};
+
+dispatcher.handler["talk"] = function (msg) {
+  talkMsg(msg)
 };

@@ -197,7 +197,7 @@ handstable.setHistory = function(msg){
             &nbsp;&nbsp;<span style="font-weight: lighter">{3}</span><br>
             {4}
             <div style="width: 100%;height: 5px;"></div>
-        </div>`
+        </div>`;
     let userTmp = `&nbsp;&nbsp;<span style="font-size: 14px">{0}</span><br>`
     let list = document.getElementById('history-div-nav');
     list.innerHTML = "";
@@ -228,6 +228,7 @@ handstable.setSelected = function(name,selected){
     }
 
     let colr = handstable.userColor[name];
+    //console.log(name,colr)
     if (!colr){
         let len = Object.keys(handstable.userColor).length;
         colr = util.getColor(len);

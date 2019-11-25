@@ -8,7 +8,7 @@ import (
 
 var (
 	sessionMap = map[string]*Session{} // 所有的链接
-	// session在status状态下，能发送出去的消息。
+	// session在status状态下，不能发送出去的消息。
 	messageTocFilter map[SessStatus]map[string]struct{}
 	// session在status状态下，需要处理的消息。
 	messageTosFilter map[SessStatus]map[string]struct{}
@@ -42,15 +42,16 @@ func (this *Session) RemoteAddr() string {
 	return this.session.RemoteAddr().String()
 }
 
-func (this *Session) Send(cmd string, msg []byte) {
+func (this *Session) Send(cmd string, msg []byte) error {
 	v := messageTocFilter[this.Status]
-	if _, ok := v[cmd]; ok {
-		this.DirectSend(msg)
+	if _, ok := v[cmd]; !ok {
+		return this.DirectSend(msg)
 	}
+	return nil
 }
 
-func (this *Session) DirectSend(msg []byte) {
-	_ = this.session.SendMessage(message.NewWSMessage(message.WSTextMessage, msg))
+func (this *Session) DirectSend(msg []byte) error {
+	return this.session.SendMessage(message.NewWSMessage(message.WSTextMessage, msg))
 }
 
 func (this *Session) SetStatus(status SessStatus) {
@@ -69,25 +70,21 @@ func OnClose(sess kendynet.StreamSession, reason string) {
 }
 
 func init() {
+	// 不能发送出去的消息
 	messageTocFilter = map[SessStatus]map[string]struct{}{
 		Look: {
-			"lookHistory": {},
-			//"rollback":    {},
-			"pushErr": {},
-		},
-		Editor: {
 			"cellSelected": {},
 			"insertRow":    {},
 			"removeRow":    {},
 			"insertCol":    {},
 			"removeCol":    {},
 			//"setCellValues": {},
-			"backEditor":  {},
-			"saveTable":   {},
-			"pushAll":     {},
-			"rollback":    {},
-			"pushErr":     {},
-			"versionList": {},
+			"saveTable": {},
+			"pushAll":   {},
+			"rollback":  {},
+		},
+		Editor: {
+			//"rollback":    {},
 		},
 	}
 

@@ -31,7 +31,7 @@ func Dispatcher(msg map[string]interface{}, session kendynet.StreamSession) {
 		if ok {
 			handler(msg, sess)
 		} else {
-			panic(fmt.Sprintf("cmd:%s no register", cmd))
+			logger.Errorf("cmd:%s no register", cmd)
 		}
 	}
 }
@@ -53,8 +53,6 @@ func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
 	}
 
 	sess := NewSession(session, table, userName)
-	sessionMap[sess.RemoteAddr()] = sess
-	table.AddSession(sess)
 
 	b := MustJsonMarshal(map[string]interface{}{
 		"cmd":       "openTable",
@@ -63,7 +61,11 @@ func onOpenTable(req map[string]interface{}, session kendynet.StreamSession) {
 		"version":   table.version,
 		"data":      getAll(table.tmpFile),
 	})
-	sess.DirectSend(b)
+	err = sess.DirectSend(b)
+	if err == nil {
+		sessionMap[sess.RemoteAddr()] = sess
+		table.AddSession(sess)
+	}
 }
 
 func handleCellSelected(req map[string]interface{}, session *Session) {
@@ -106,7 +108,12 @@ func handleSetCellValues(req map[string]interface{}, session *Session) {
 	session.Table.AddCmd(req, session.UserName)
 	doCmd(session.Table.tmpFile, req, false)
 	//session.Table.pushAllSession(req)
-	session.Table.pushAll()
+
+	session.Table.pushAllSession(map[string]interface{}{
+		"cmd":     "pushAll",
+		"version": session.Table.version,
+		"data":    getAll(session.Table.tmpFile),
+	})
 }
 
 func handleSaveTable(req map[string]interface{}, session *Session) {
@@ -129,14 +136,13 @@ func handleVersionList(req map[string]interface{}, session *Session) {
 		"cmd":  req["cmd"],
 		"list": session.Table.packHistory(),
 	})
-	session.Send(req["cmd"].(string), b)
+	_ = session.Send(req["cmd"].(string), b)
 
 }
 
 func handleLookHistory(req map[string]interface{}, session *Session) {
 	ver := int(req["version"].(float64))
 	table := session.Table
-	session.SetStatus(Look)
 
 	data := getAll(table.xlFile)
 	newF := newFile(data)
@@ -160,17 +166,21 @@ func handleLookHistory(req map[string]interface{}, session *Session) {
 		"version": ver,
 		"data":    getAll(newF),
 	})
-	session.Send(req["cmd"].(string), b)
+	if session.Send(req["cmd"].(string), b) == nil {
+		session.SetStatus(Look)
+	}
 }
 
 func handleBackEditor(req map[string]interface{}, session *Session) {
-	session.SetStatus(Editor)
+
 	b := MustJsonMarshal(map[string]interface{}{
 		"cmd":     req["cmd"],
 		"version": session.Table.version,
 		"data":    getAll(session.Table.tmpFile),
 	})
-	session.Send(req["cmd"].(string), b)
+	if session.Send(req["cmd"].(string), b) == nil {
+		session.SetStatus(Editor)
+	}
 }
 
 func handleRollback(req map[string]interface{}, session *Session) {
@@ -249,6 +259,14 @@ func handleRollback(req map[string]interface{}, session *Session) {
 	})
 }
 
+func handleTalk(req map[string]interface{}, session *Session) {
+	session.Table.pushAllSession(map[string]interface{}{
+		"cmd":      req["cmd"],
+		"userName": session.UserName,
+		"msg":      req["msg"],
+	})
+}
+
 //## pushError 返回错误信息
 func pushErr(cmd interface{}, msg string, session *Session) {
 	fmt.Println("pushErr", msg)
@@ -274,11 +292,13 @@ func init() {
 	dispatcher["setCellValues"] = handleSetCellValues
 	// 保存，将所有cmd指令存库，生成一条版本记录
 	dispatcher["saveTable"] = handleSaveTable
-	// 查看历史版本，返回编辑状态。消息转发过滤
+	// 查看历史版本，返回编辑状态。
 	dispatcher["lookHistory"] = handleLookHistory
 	dispatcher["backEditor"] = handleBackEditor
 	// 回滚版本，单独生成一条版本记录
 	dispatcher["rollback"] = handleRollback
 	// 获取版本列表
 	dispatcher["versionList"] = handleVersionList
+	// 聊天消息
+	dispatcher["talk"] = handleTalk
 }

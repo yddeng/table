@@ -22,6 +22,7 @@ type Table struct {
 	tmpFile    *excelize.File      // 中间文件，同步给用户
 	xlFile     *excelize.File      // 指令计算的结果文件，最终落地到数据库
 	sessionMap map[string]*Session // session, for remoteAddr
+	nameMap    map[string]int      // 统计当前有哪些用户,且链接数量
 
 	cmds       []map[string]interface{} // 当前cmd指令的集合
 	cmdUsers   []string                 // 产生当前指令的用户
@@ -56,6 +57,7 @@ func OpenTable(tableName string) (*Table, error) {
 		tmpFile:    tmpFile,
 		xlFile:     xlFile,
 		sessionMap: map[string]*Session{},
+		nameMap:    map[string]int{},
 		cmds:       []map[string]interface{}{},
 		cmdUsers:   []string{},
 	}
@@ -163,11 +165,54 @@ func (this *Table) AddSession(session *Session) {
 	if _, ok := this.sessionMap[session.RemoteAddr()]; !ok {
 		this.sessionMap[session.RemoteAddr()] = session
 	}
+
+	if _, ok := this.nameMap[session.UserName]; !ok {
+		this.nameMap[session.UserName] = 1
+		this.pushUserEnter(session, true)
+	} else {
+		this.nameMap[session.UserName] += 1
+		this.pushUserEnter(session, false)
+	}
 }
 
 func (this *Table) RemoveSession(session *Session) {
 	if _, ok := this.sessionMap[session.RemoteAddr()]; ok {
 		delete(this.sessionMap, session.RemoteAddr())
+	}
+
+	if _, ok := this.nameMap[session.UserName]; ok {
+		this.nameMap[session.UserName] -= 1
+		fmt.Println(this.nameMap)
+
+		if this.nameMap[session.UserName] == 0 {
+			delete(this.nameMap, session.UserName)
+			this.pushOtherUser(map[string]interface{}{
+				"cmd":      "userLeave",
+				"userName": session.UserName,
+			}, session.UserName)
+		}
+	}
+
+}
+
+func (this *Table) pushUserEnter(session *Session, isNew bool) {
+	// 第一次登入，将自己同步给其他人
+	if isNew {
+		this.pushOtherUser(map[string]interface{}{
+			"cmd":      "userEnter",
+			"userName": session.UserName,
+		}, session.UserName)
+	}
+
+	// 将其他人同步给自己
+	for name := range this.nameMap {
+		if name != session.UserName {
+			b := MustJsonMarshal(map[string]interface{}{
+				"cmd":      "userEnter",
+				"userName": name,
+			})
+			_ = session.DirectSend(b)
+		}
 	}
 }
 
@@ -175,7 +220,7 @@ func (this *Table) RemoveSession(session *Session) {
 func (this *Table) pushAllSession(msg map[string]interface{}) {
 	b := MustJsonMarshal(msg)
 	for _, session := range this.sessionMap {
-		session.Send(msg["cmd"].(string), b)
+		_ = session.Send(msg["cmd"].(string), b)
 	}
 }
 
@@ -183,20 +228,9 @@ func (this *Table) pushOtherUser(msg map[string]interface{}, userName string) {
 	b := MustJsonMarshal(msg)
 	for _, session := range this.sessionMap {
 		if session.UserName != userName {
-			session.Send(msg["cmd"].(string), b)
+			_ = session.Send(msg["cmd"].(string), b)
 		}
 	}
-}
-
-// pushAll 推送所有数据
-func (this *Table) pushAll() {
-	data := getAll(this.tmpFile)
-	resp := map[string]interface{}{
-		"cmd":     "pushAll",
-		"version": this.version,
-		"data":    data,
-	}
-	this.pushAllSession(resp)
 }
 
 func Loop() {

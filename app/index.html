@@ -183,14 +183,15 @@
         let uname = document.getElementById("userName").value;
         let pwd = document.getElementById("password").value;
         if (!uname || !pwd ){
-            showTips("用户名或密码不能为空",2000)
+            showTips("用户名或密码不能为空",2000);
             return
         }
         let hurl = httpAddr+"/login";
         let data = {userName:uname,password:pwd};
         util.httpPost(hurl,data,function (res) {
             if(res.ok === 1){
-                showTips("登陆成功",2000)
+                showTips("登陆成功",2000);
+                token = res.token;
                 util.setCookie("token",res.token,7);
                 loginOk(uname)
             }else{
