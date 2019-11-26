@@ -1,66 +1,15 @@
 package pgsql
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 )
 
-// 操作文件
-func CreateTableCmd(tableName string) error {
-	sql := `
-    CREATE TABLE "public"."` + tableName + `_cmd" (
-        "version"   SERIAL primary key ,
-        "users"     varchar(128) COLLATE "pg_catalog"."default" NOT NULL,
-        "date"      varchar(64) COLLATE "pg_catalog"."default" NOT NULL,
-        "cmds"      varchar(65535) COLLATE "pg_catalog"."default" NOT NULL
-    );`
-	smt, err := dbConn.Prepare(sql)
-	if err != nil {
-		return err
-	}
-	_, err = smt.Exec()
-	return err
-}
-
-// 插入操作
-func InsertCmd(tableName, userName, cmd string) (int, string, error) {
-	sqlStr := `
-INSERT INTO "%s_cmd" (users,date,cmds)  
-VALUES ('%s','%s','%s')
-RETURNING version;`
-
-	date := GenDateTimeString(time.Now())
-	sqlStatement := fmt.Sprintf(sqlStr, tableName, userName, date, cmd)
-	//fmt.Println(sqlStatement)
-	row := dbConn.QueryRow(sqlStatement)
-	var id int
-	err := row.Scan(&id)
-	return id, date, err
-}
-
-func LoadCmd(tableName string, v int) ([]string, string, []map[string]interface{}, error) {
-	sqlStr := `
-SELECT users,date,cmds FROM "%s_cmd" 
-WHERE version=%d;`
-
-	sqlStatement := fmt.Sprintf(sqlStr, tableName, v)
-	var userStr, dateStr, cmdStr string
-	row := dbConn.QueryRow(sqlStatement)
-	err := row.Scan(&userStr, &dateStr, &cmdStr)
-	if err != nil {
-		return nil, "", nil, err
-	}
-
-	var users []string
-	_ = json.Unmarshal(([]byte)(userStr), &users)
-	var cmds []map[string]interface{}
-	err = json.Unmarshal(([]byte)(cmdStr), &cmds)
-	return users, dateStr, cmds, nil
-}
-
-func Insert(tableName string, fields map[string]interface{}) error {
+/*
+ * 插入数据
+ * tableName:表名 fields:键值对
+ */
+func Set(tableName string, fields map[string]interface{}) error {
 	sqlStr := `
 INSERT INTO "%s" (%s)
 VALUES (%s);`
@@ -84,26 +33,135 @@ VALUES (%s);`
 	return err
 }
 
-func Select(tableName string, fields map[string]interface{}) error {
+/*
+ * 更新数据
+ * tableName:表名 whereStr:选择规则 fields:键值对
+ */
+func Update(tableName, whereStr string, fields map[string]interface{}) error {
 	sqlStr := `
-SELECT INTO "%s" (%s)
-VALUES (%s);`
+UPDATE "%s" 
+SET %s
+WHERE %s;`
 
-	keys, values := []string{}, []string{}
+	keys := []string{}
 	args := []interface{}{}
 	var i = 1
 	for k, v := range fields {
-		keys = append(keys, k)
-		values = append(values, fmt.Sprintf("$%d", i))
+		keys = append(keys, fmt.Sprintf(`%s = $%d`, k, i))
 		i++
 		args = append(args, v)
 	}
 
-	sqlStatement := fmt.Sprintf(sqlStr, tableName, strings.Join(keys, ","), strings.Join(values, ","))
+	sqlStatement := fmt.Sprintf(sqlStr, tableName, strings.Join(keys, ","), whereStr)
+	//fmt.Println(sqlStatement)
 	smt, err := dbConn.Prepare(sqlStatement)
 	if err != nil {
 		return err
 	}
 	_, err = smt.Exec(args...)
 	return err
+
+}
+
+/*
+ * 没有数据插入，有则添加。
+ * tableName:表名 key:主键名 fields:键值对，包含主键
+ */
+func SetNx(tableName, key string, fields map[string]interface{}) error {
+	sqlStr := `
+INSERT INTO "%s" (%s)
+VALUES(%s) 
+ON conflict(%s) DO 
+UPDATE SET %s;`
+
+	keys, values, sets := []string{}, []string{}, []string{}
+	args := []interface{}{}
+	var i = 1
+	for k, v := range fields {
+		keys = append(keys, k)
+		values = append(values, fmt.Sprintf("$%d", i))
+		if key != k {
+			sets = append(sets, fmt.Sprintf(`%s = $%d`, k, i))
+		}
+		i++
+		args = append(args, v)
+	}
+
+	sqlStatement := fmt.Sprintf(sqlStr, tableName, strings.Join(keys, ","), strings.Join(values, ","), key, strings.Join(sets, ","))
+	//fmt.Println(sqlStatement)
+	smt, err := dbConn.Prepare(sqlStatement)
+	if err != nil {
+		return err
+	}
+	_, err = smt.Exec(args...)
+	return err
+}
+
+/*
+ * 读取数据。
+ * tableName:表名 whereStr:选择规则 fields:要查询的键名
+ * ret 返回键值对
+ */
+func Get(tableName, whereStr string, fields []string) (ret map[string]interface{}, err error) {
+	sqlStr := `
+SELECT %s FROM "%s" 
+WHERE %s;`
+
+	keys := []string{}
+	values := []interface{}{}
+	for _, k := range fields {
+		keys = append(keys, k)
+		values = append(values, new(interface{}))
+	}
+
+	sqlStatement := fmt.Sprintf(sqlStr, strings.Join(keys, ","), tableName, whereStr)
+	//fmt.Println(sqlStatement)
+	row := dbConn.QueryRow(sqlStatement)
+	err = row.Scan(values...)
+	if err != nil {
+		return nil, err
+	}
+
+	ret = map[string]interface{}{}
+	for i, k := range fields {
+		ret[k] = *(values[i].(*interface{}))
+	}
+
+	return ret, nil
+}
+
+/*
+ * 读取所有数据。
+ * tableName:表名 fields:要查询的键名
+ * ret 返回键值对的slice
+ */
+func GetAll(tableName string, fields []string) (ret []map[string]interface{}, err error) {
+	keys := []string{}
+	values := []interface{}{}
+	for _, k := range fields {
+		keys = append(keys, k)
+		values = append(values, new(interface{}))
+	}
+
+	sqlStatement := fmt.Sprintf(`SELECT %s FROM "%s";`, strings.Join(keys, ","), tableName)
+	rows, err := dbConn.Query(sqlStatement)
+	if err != nil {
+		return nil, err
+	}
+
+	ret = []map[string]interface{}{}
+	for rows.Next() {
+		err := rows.Scan(values...)
+		if err != nil {
+			return nil, err
+		}
+
+		mid := map[string]interface{}{}
+		for i, k := range fields {
+			mid[k] = *(values[i].(*interface{}))
+		}
+		ret = append(ret, mid)
+	}
+
+	return ret, nil
 }

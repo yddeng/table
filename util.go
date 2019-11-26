@@ -1,6 +1,10 @@
 package table
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 func Min(a, b int) (int, int) {
 	if a > b {
@@ -31,4 +35,10 @@ func MustJsonUnmarshal(data []byte, v interface{}) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// 生成日期字符串
+func GenDateTimeString(date time.Time) string {
+	return fmt.Sprintf("%d-%d-%d %d:%d:%d",
+		date.Year(), int(date.Month()), date.Day(), date.Hour(), date.Minute(), date.Second())
 }

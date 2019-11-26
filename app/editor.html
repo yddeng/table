@@ -149,7 +149,7 @@
 			position: absolute;
 			top: 25%;
 			left: 40%;
-			/*max-width: 20%;*/
+			max-width: 20%;
 			max-height: 50%;
 			padding: 10px;
 			background-color: #95A5A6;
@@ -157,20 +157,14 @@
 			overflow: auto;
 		}
 
-		.chat-idle{
+		.chat{
 			position: fixed;
 			bottom: 0px;
 			right: 20px;
 			width: 320px;
-			/*height: 40px;*/
 			border-radius: 10px;
 			background-color: #85C1E9 ;
 			z-index: 1002;
-		}
-		#chat-div-head::after{
-			content:"...";
-			font-weight:bold;
-			position:absolute;
 		}
 	</style>
 </head>
@@ -181,7 +175,7 @@
 	<div id="history-div-nav"></div>
 </div>
 <div id="fade" class="black_overlay"></div>
-<div id="chat" class="chat-idle">
+<div id="chat" class="chat">
 	<div id="chat-div-head" style="color: black;cursor: pointer;padding: 10px;height: 26px;width: 300px;
 	 white-space: nowrap; text-overflow: ellipsis;overflow: hidden;" onclick="chatHeadOnClick()"></div>
 	<div id="chat-div-message" style="display: none;background-color: #ECF0F1;padding: 8px;height: 320px;overflow:auto;"></div>
@@ -199,11 +193,14 @@
 	<p>4.文件保存，任意一人点击"保存"将保存从上版本到当前所有人操作指令，生成一条版本记录。数据有修改但无人保存，将在所有客户端关闭时自动保存。</p>
 	<p>5.在浏览历史版本时，不能修改数据。只有处于编辑状态下才能修改数据。</p>
 	<p>6.回退版本时，将丢弃当前所有人的编辑指令、数据，实际数据回退到对应版本，强行同步给所有人。</p>
+	<p>7.聊天数据服务器不保存，仅转发。刷新客户端将丢失所有记录。</p>
 	<p>### 功能支持</p>
 	<p>1.实时显示他人当前编辑的单元格。以不同颜色区分。</p>
 	<p>2.查看历史版本，仅浏览数据，实际数据不回退，可导出该浏览版本数据。</p>
 	<p>3.版本回退，可回退到之前任意版本，实际数据将回退到该版本。</p>
 	<p>4.导出文件，以当前前端展示的数据导出文件，格式支持 csv、xlsx。</p>
+	<p>5.显示编辑当前表的所有用户。</p>
+	<p>6.支持聊天。多人编辑时可在线沟通。</p>
 </div>
 <div id="editor-header">
 	<div id="header_top">
@@ -288,7 +285,7 @@
 		let sp = document.createElement("span");
 		sp.innerText = util.format(`{0} {1}\n{2}\n`,msg.userName,util.localTime(),msg.msg);
 		let msgDiv = document.getElementById("chat-div-message");
-		msgDiv.appendChild(sp)
+		msgDiv.appendChild(sp);
 
 		let inputDiv = document.getElementById("chat-div-input");
 		if (msgDiv.style.display === "none" ){

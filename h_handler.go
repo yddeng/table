@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 // 创建文件
@@ -33,7 +34,7 @@ func HandleCreateTable(w http.ResponseWriter, r *http.Request) {
 	tableName := req["tableName"]
 	desc := req["describe"]
 	// 判断名字是否存在
-	_, _, _, _, err = pgsql.LoadTableData(tableName)
+	_, err = pgsql.Get("table_data", fmt.Sprintf("table_name = '%s'", tableName), []string{"table_name"})
 	if err == nil {
 		httpErr("名字重复", w)
 		return
@@ -47,7 +48,13 @@ func HandleCreateTable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// todo 失败，回滚
-	err = pgsql.InsertTableData(tableName, desc)
+	err = pgsql.Set("table_data", map[string]interface{}{
+		"table_name": tableName,
+		"describe":   desc,
+		"version":    0,
+		"date":       GenDateTimeString(time.Now()),
+		"data":       string(MustJsonMarshal([]string{})),
+	})
 	if err != nil {
 		httpErr(err.Error(), w)
 		return
@@ -99,7 +106,7 @@ func HandleGetAllTable(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Headers", "Content-Type") //header的类型
 	w.Header().Set("content-type", "application/json")             //返回数据格式是json
 
-	ret, err := pgsql.AllTableData()
+	ret, err := pgsql.GetAll("table_data", []string{"table_name", "describe", "version", "date"})
 	if err != nil {
 		httpErr(err.Error(), w)
 		return
@@ -134,11 +141,14 @@ func HandleDownloadTable(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tableName := req["tableName"]
-	_, _, _, data, err := pgsql.LoadTableData(tableName)
+	ret, err := pgsql.Get("table_data", fmt.Sprintf("table_name = '%s'", tableName), []string{"data"})
 	if err != nil {
 		httpErr(err.Error(), w)
 		return
 	}
+
+	var data [][]string
+	MustJsonUnmarshal(([]byte)(ret["data"].(string)), &data)
 
 	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"ok":   1,
@@ -170,12 +180,13 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	userName := req["userName"]
 	password := req["password"]
-	pwd, _, err := pgsql.LoadUser(userName)
+	ret, err := pgsql.Get("user", fmt.Sprintf("user_name = '%s'", userName), []string{"password"})
 	if err != nil {
 		httpErr("该用户不存在", w)
 		return
 	}
 
+	pwd := ret["password"].(string)
 	if strings.Compare(pwd, password) != 0 {
 		httpErr("密码错误", w)
 		return
@@ -212,13 +223,17 @@ func HandleAddUser(w http.ResponseWriter, r *http.Request) {
 
 	userName := req["userName"]
 	password := req["password"]
-	_, _, err = pgsql.LoadUser(userName)
+	_, err = pgsql.Get("user", fmt.Sprintf("user_name = '%s'", userName), []string{"password"})
 	if err == nil {
 		httpErr("用户名已存在", w)
 		return
 	}
 
-	err = pgsql.InsertUser(userName, password, "")
+	err = pgsql.Set("user", map[string]interface{}{
+		"user_name":  userName,
+		"password":   password,
+		"permission": "",
+	})
 	if err != nil {
 		httpErr(err.Error(), w)
 		return

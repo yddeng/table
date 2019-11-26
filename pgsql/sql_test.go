@@ -1,53 +1,40 @@
 package pgsql
 
 import (
-	"encoding/json"
 	"fmt"
-	"github.com/360EntSecGroup-Skylar/excelize"
 	"testing"
-	"time"
 )
 
-func TestCreateTable(t *testing.T) {
-	//CreateTableCmd("deng")
-
-	InsertCmd("deng", "yidong", "testets")
-}
-
-func TestLoadTableData(t *testing.T) {
-	_, _, _, _, err := LoadTableData("df")
-	fmt.Println(err)
-}
-
-func TestInsert(t *testing.T) {
-	Insert("table_data", map[string]interface{}{
-		"table_name":  "ddd",
-		"now_version": 3,
-		"data":        "dfs",
-	})
-}
-
-func TestUpdateTableData(t *testing.T) {
-	file := excelize.NewFile()
-	file.SetCellValue("Sheet1", "A1", "")
-	data, err := file.GetRows("Sheet1")
-	fmt.Println(data, err)
-	b, err := json.Marshal(data)
-	fmt.Println(string(b), err)
-	err = UpdateTableData("ydd", map[string]interface{}{
-		"version": 2,
-		"date":    "sdd",
-		"data":    string(b),
+func TestSet(t *testing.T) {
+	err := Set("user", map[string]interface{}{
+		"user_name": "ddd",
+		"password":  "erer",
 	})
 	fmt.Println(err)
-	v, _, _, d, err := LoadTableData("ddd")
-	fmt.Println(v, d, err)
 }
 
-func TestAllUser(t *testing.T) {
-	ret, err := AllUser()
+func TestUpdate(t *testing.T) {
+	err := Update("user", "user_name = '123'", map[string]interface{}{
+		"password": "erer",
+	})
+	fmt.Println(err)
+}
+
+func TestSetNx(t *testing.T) {
+	err := SetNx("user", "user_name", map[string]interface{}{
+		"user_name":  "123",
+		"password":   321,
+		"permission": "",
+	})
+	fmt.Println(err)
+}
+
+func TestGet(t *testing.T) {
+	ret, err := Get("table_data", "table_name = 'dadada'", []string{"table_name", "describe", "version"})
+	fmt.Println(ret["table_name"].(string), ret["describe"].(string), ret["version"].(int64), err)
+}
+
+func TestGetAll(t *testing.T) {
+	ret, err := GetAll("user", []string{"password", "user_name", "permission"})
 	fmt.Println(ret, err)
-	pwd, per, err := LoadUser("deng")
-	fmt.Println(pwd, per, err)
-	fmt.Println(time.Now().UnixNano())
 }

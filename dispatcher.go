@@ -231,7 +231,7 @@ func handleRollback(req map[string]interface{}, session *Session) {
 
 		// 更新数据库
 		b := MustJsonMarshal(getAll(newF))
-		err = pgsql.UpdateTableData(table.tableName, map[string]interface{}{
+		err = pgsql.Update("table_data", fmt.Sprintf("table_name = '%s'", table.tableName), map[string]interface{}{
 			"version": v,
 			"date":    date,
 			"data":    string(b),

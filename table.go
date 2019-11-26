@@ -43,12 +43,17 @@ func PostTask(task func()) {
 // 从数据库table_data 加载表数据
 // 将数据赋值给 xlFile, tmpFile
 func OpenTable(tableName string) (*Table, error) {
-	fmt.Println("loadTable", tableName)
-	_, v, _, data, err := pgsql.LoadTableData(tableName)
+	//fmt.Println("loadTable", tableName)
+	ret, err := pgsql.Get("table_data", fmt.Sprintf("table_name = '%s'", tableName), []string{"version", "data"})
 	if err != nil {
 		return nil, err
 	}
-	//fmt.Println(v, data, err)
+
+	var data [][]string
+	MustJsonUnmarshal(([]byte)(ret["data"].(string)), &data)
+	v := int(ret["version"].(int64))
+	fmt.Println(v, data, err)
+
 	xlFile := newFile(data)
 	tmpFile := newFile(data)
 	table := &Table{
@@ -124,8 +129,8 @@ func (this *Table) SaveTable() error {
 
 		// 保存最新数据
 		b := MustJsonMarshal(getAll(this.xlFile))
-		err = pgsql.UpdateTableData(this.tableName, map[string]interface{}{
-			"version": this.version,
+		err = pgsql.Update("table_data", fmt.Sprintf("table_name = '%s'", this.tableName), map[string]interface{}{
+			"version": v,
 			"date":    date,
 			"data":    string(b),
 		})
@@ -182,7 +187,7 @@ func (this *Table) RemoveSession(session *Session) {
 
 	if _, ok := this.nameMap[session.UserName]; ok {
 		this.nameMap[session.UserName] -= 1
-		fmt.Println(this.nameMap)
+		//fmt.Println(this.nameMap)
 
 		if this.nameMap[session.UserName] == 0 {
 			delete(this.nameMap, session.UserName)
@@ -247,7 +252,7 @@ func Loop() {
 			for _, file := range tables {
 				if len(file.sessionMap) == 0 {
 					_ = file.SaveTable()
-					fmt.Println("delete Table", file.tableName)
+					//fmt.Println("delete Table", file.tableName)
 					delete(tables, file.tableName)
 				}
 			}

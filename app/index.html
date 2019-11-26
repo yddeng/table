@@ -25,10 +25,19 @@
         #menu{
             margin-left: 10%;
             width: 80%;
+            height: 40px;
+        }
+        .nav{
+            float: left;
+            line-height: 40px;
         }
         #list{
             margin-left: 10%;
             width: 80%;
+        }
+        .item-check{
+            width: 5%;
+            float: left;
         }
         .item-name{
             width: 10%;
@@ -47,17 +56,20 @@
             float: left;
         }
         .item-action{
-            width: 20%;
+            width: 10%;
             float: left;
         }
         #item-header{
             height: 50px;
             line-height: 50px;
         }
+        .checkbox{
+            height: 20px;
+            width: 20px;
+        }
         .item{
             height: 40px;
             line-height: 40px;
-            /*border: 1px solid white;*/
         }
         .item:hover{
             background-color: #E5E7E9;
@@ -140,10 +152,14 @@
 </div>
 <div>
     <div id="menu">
-        &nbsp;&nbsp;<button style="width: 100px;height: 50px" onclick="document.getElementById('newTable').style.display='block';">新建表格</button>
+        <div class="nav" ><input type="checkbox" name="checkAll" onclick="changeState(this.checked)" class="checkbox"></div>
+        <div class="nav" ><button onclick="downAllSelected()" style="width: 80px">下载已选</button></div>
+        <div class="nav" ><div style="width: 10px;height:30px;margin-top: 6px;padding-left: 8px"><div style="height: 30px;width:2px;background: #CACFD2"></div></div></div>
+        <div class="nav" ><button style="width: 80px" onclick="document.getElementById('newTable').style.display='block';">新建表格</button></div>
     </div>
     <div id="list">
         <div id="item-header">
+            <div class="item-check">选择</div>
             <div class="item-name">名称</div>
             <div class="item-describe">描述</div>
             <div class="item-version">当前版本</div>
@@ -307,13 +323,14 @@
 
     function showItem(items) {
         let tmp = `<div class="item">
-                <div class="item-name">{0}</div>
-                <div class="item-describe">{1}</div>
-                <div class="item-version">{2}</div>
-                <div class="item-date">{3}</div>
+                <div class="item-check"><input type="checkbox" value="{0}" name="checkbox" class="checkbox"></div>
+                <div class="item-name">{1}</div>
+                <div class="item-describe">{2}</div>
+                <div class="item-version">{3}</div>
+                <div class="item-date">{4}</div>
                 <div class="item-action">
-                    <button onclick="download('{4}')">下载</button>
-                    <button onclick="openTable('{5}')">编辑</button>
+                    <button onclick="download('{5}')">下载</button>
+                    <button onclick="openTable('{6}')">编辑</button>
                 </div>
             </div>
 <hr>`;
@@ -323,14 +340,40 @@
         for(let i = 0;i < items.length;i++) {
             let item = items[i];
             if (item.describe === ""){
-                str += util.format(tmp,item.tableName,"暂无描述",item.version,item.date,item.tableName,item.tableName)
+                str += util.format(tmp,item.table_name,item.table_name,"暂无描述",item.version,item.date,item.table_name,item.table_name)
             }else {
-                str += util.format(tmp,item.tableName,item.describe,item.version,item.date,item.tableName,item.tableName)
+                str += util.format(tmp,item.table_name,item.table_name,item.describe,item.version,item.date,item.table_name,item.table_name)
             }
         }
         list.innerHTML = str ;
     }
 
+    function changeState(isChecked)
+    {
+        let chk_list = document.getElementsByName("checkbox");
+        //console.log(isChecked,chk_list);
+        for(let i=0;i<chk_list.length;i++){
+            chk_list[i].checked=isChecked;
+        }
+    }
+
+    function  getSelectedBox() {
+        let selectNames = new Array();
+        let chk_list = document.getElementsByName("checkbox");
+        for(let i=0;i<chk_list.length;i++){
+            if (chk_list[i].checked){
+                selectNames.push(chk_list[i].value)
+            }
+        }
+        return selectNames
+    }
+    function downAllSelected() {
+        let selectNames = getSelectedBox();
+        for(let i=0;i< selectNames.length;i++){
+            //console.log(selectNames[i]);
+            download(selectNames[i])
+        }
+    }
 
 </script>
 </body>
