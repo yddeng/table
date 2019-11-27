@@ -15,6 +15,7 @@ func Min(a, b int) (int, int) {
 
 func CheckErr(err error) {
 	if err != nil {
+		fmt.Println("panic", err)
 		panic(err)
 	}
 }
@@ -32,9 +33,7 @@ func MustJsonMarshal(v interface{}) []byte {
 
 func MustJsonUnmarshal(data []byte, v interface{}) {
 	err := json.Unmarshal(data, v)
-	if err != nil {
-		panic(err)
-	}
+	CheckErr(err)
 }
 
 // 生成日期字符串

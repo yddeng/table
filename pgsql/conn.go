@@ -37,28 +37,6 @@ func GenDateTimeString(date time.Time) string {
 		date.Year(), int(date.Month()), date.Day(), date.Hour(), date.Minute(), date.Second())
 }
 
-func query(tableName string) {
-	sqlStr := fmt.Sprintf(`SELECT * FROM %s;`, tableName)
-	rows, err := dbConn.Query(sqlStr)
-	if err != nil {
-		panic(err)
-	}
-
-	out := []string{}
-	for rows.Next() {
-		var id string
-		var age int
-		err := rows.Scan(&age, &id)
-		if err != nil {
-			panic(err)
-		}
-		out = append(out, fmt.Sprintf("%s:%d", id, age))
-	}
-	for _, v := range out {
-		fmt.Println(v)
-	}
-}
-
 func init() {
 	err := sqlOpen()
 	if err != nil {

@@ -278,32 +278,5 @@ handstable.pos2Axis = function(col,row){
     return  util.format("{0}{1}",handstable.table.getColHeader(col),this.table.getRowHeader(row));
 };
 
-function downCsv() {
-    handstable.exportPlugin.downloadFile('csv', {filename: handstable.tableName});
-};
 
-function downExcel() {
-    let ws =  XLSX.utils.aoa_to_sheet(handstable.table.getData());
-    let wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, util.format("{0}.xlsx",handstable.tableName))
-};
-
-function showData() {
-    let data = handstable.table.getData();
-    let msg = "";
-    for (let i = 0;i < data.length;i++){
-        let row = data[i];
-        for (let j = 0;j < row.length;j++){
-            if (row[j] == null || row[j] ==""){
-                msg+="  ,"
-            }else {
-                msg+=row[j]+" ,"
-            }
-        }
-        msg += "\n"
-    }
-    //console.log(msg);
-    showTips(msg,5000)
-}
 

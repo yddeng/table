@@ -97,7 +97,7 @@
 			position: absolute;
 			top: 60px;
 			right: 0px;
-			width: 200px;
+			width: 250px;
 			height: calc(100% - 65px);
 			/*padding: 10px;*/
 			border: 1px solid #F2F3F4 ;
@@ -111,7 +111,7 @@
 		}
 		.rbBtn{
 			font-size: 12px;
-			margin-left: 90px
+			margin-left: 140px
 		}
 		.rbBtn:hover{
 			color:#3498DB;
@@ -171,7 +171,9 @@
 <body>
 <div id="tips" class="tips"><span id="tips-msg"></span></div>
 <div id="history-div" class="history-div">
-	<a href = "javascript:void(0)" style="margin-left: 130px" onclick = "document.getElementById('history-div').style.display='none';backEditor()">关闭</a>
+	<div style="height: 40px;line-height: 40px">
+		<a href = "javascript:void(0)" style="margin-left: 200px" onclick = "document.getElementById('history-div').style.display='none';backEditor()">关闭</a>
+	</div>
 	<div id="history-div-nav"></div>
 </div>
 <div id="fade" class="black_overlay"></div>
@@ -241,9 +243,8 @@
 <script>
 
 	let tableName = util.getUrlParam("tableName");
-	let token = util.getUrlParam("token");
-	console.log(tableName,token);
-	if (tableName != null && token !=null){
+	let token = util.getCookie("token");
+	if (tableName != null && token !== ""){
 		socket.init(tableName,token);
 
 		document.title = tableName;
@@ -252,9 +253,10 @@
 		let file = document.getElementById('tableName');
 		file.innerHTML = tableName;
 
-		var hot = handstable.init(document.getElementById('table'),tableName)
+		handstable.init(document.getElementById('table'),tableName)
 	}else {
-		util.alert("参数错误")
+		console.log(tableName,token);
+		util.alert("参数错误,返回重试！")
 	}
 
 	function showTips(msg,t) {
@@ -275,6 +277,32 @@
 		// Chrome, Safari, Firefox 4+, Opera 12+ , IE 9+
 		return '关闭提示';
 	};
+
+	function downCsv() {
+		handstable.exportPlugin.downloadFile('csv', {filename: handstable.tableName});
+	};
+
+	function downExcel() {
+		util.exportExcel(handstable.tableName,handstable.table.getData());
+	};
+
+	function showData() {
+		let data = handstable.table.getData();
+		let msg = "";
+		for (let i = 0;i < data.length;i++){
+			let row = data[i];
+			for (let j = 0;j < row.length;j++){
+				if (row[j] == null || row[j] ==""){
+					msg+="  ,"
+				}else {
+					msg+=row[j]+" ,"
+				}
+			}
+			msg += "\n"
+		}
+		//console.log(msg);
+		showTips(msg,5000)
+	}
 
 	function chatHead(txt) {
 		let headDiv = document.getElementById("chat-div-head");

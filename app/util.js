@@ -72,7 +72,7 @@ util.getCookie = function(cname) {
     for(let i=0; i<ca.length; i++)
     {
         let c = ca[i].trim();
-        if (c.indexOf(name)==0) return c.substring(name.length,c.length);
+        if (c.indexOf(name)===0) return c.substring(name.length,c.length);
     }
     return "";
 };
@@ -115,3 +115,10 @@ function firm() {
     }
 
 }
+
+util.exportExcel = function(name,data){
+    let ws =  XLSX.utils.aoa_to_sheet(data);
+    let wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    XLSX.writeFile(wb, util.format("{0}.xlsx",name))
+};

@@ -30,11 +30,21 @@ func TestSetNx(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	ret, err := Get("table_data", "table_name = 'dadada'", []string{"table_name", "describe", "version"})
-	fmt.Println(ret["table_name"].(string), ret["describe"].(string), ret["version"].(int64), err)
+	ret, err := Get("table_data", "table_name = 'sdd'", []string{"table_name", "describe", "version"})
+	fmt.Println(ret, err)
 }
 
 func TestGetAll(t *testing.T) {
 	ret, err := GetAll("user", []string{"password", "user_name", "permission"})
+	fmt.Println(ret, err)
+}
+
+func TestAlterAddTagData(t *testing.T) {
+	err := AlterAddTagData("Test")
+	fmt.Println(err)
+}
+
+func TestGetTag(t *testing.T) {
+	ret, err := GetTag("123")
 	fmt.Println(ret, err)
 }

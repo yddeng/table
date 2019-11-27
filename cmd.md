@@ -3,6 +3,11 @@
 req  createTable {tableName:string,describe:string,token:string}
 resp ok= 1/0
      msg= string
+     
+## 修改表描述 post
+req  updateDescribe {tableName:string,describe:string,token:string}
+resp ok= 1/0
+     msg= string
 
 ## 删除表 post
 req  deleteTable {tableName:string,token:string}
@@ -27,6 +32,23 @@ resp ok  = 1/0
      msg = string
      token = string
         
+## 添加tag post
+req  addTag {tagName:string,describe:string,tables:[]string,token:string}
+resp ok= 1/0
+     msg= string
+
+## 查看tag post
+req  showTag {token:string}
+resp ok= 1/0
+     msg= string
+     tags = {tagName:string,date:string}
+     
+## 下载tag post
+req  downTag {tagName:string,token:string}
+resp ok= 1/0
+     msg= string
+     tables = []{tableName:string,data:[][]string}
+     
 #websocket
 ## pushAll 推送所有数据
 ```

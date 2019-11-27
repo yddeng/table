@@ -55,12 +55,18 @@ func Start(path string) {
 	// http handler
 	http.HandleFunc("/login", HandleLogin)
 	http.HandleFunc("/createTable", HandleCreateTable)
+	http.HandleFunc("/updateDescribe", HandleUpdateDescribe)
 	//http.HandleFunc("/deleteTable", HandleDeleteTable)
 	http.HandleFunc("/getAllTable", HandleGetAllTable)
 	http.HandleFunc("/downloadTable", HandleDownloadTable)
 
 	// user
 	http.HandleFunc("/addUser", HandleAddUser)
+
+	// tag
+	http.HandleFunc("/addTag", HandleAddTag)
+	http.HandleFunc("/showTag", HandleShowTag)
+	http.HandleFunc("/downTag", HandleDownTag)
 	fmt.Printf("http start on %s, LoadDir on %s\n", _conf.HttpAddr, _conf.LoadDir)
 	err = http.ListenAndServe(_conf.HttpAddr, nil)
 	if err != nil {

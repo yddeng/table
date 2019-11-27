@@ -30,6 +30,7 @@
         .nav{
             float: left;
             line-height: 40px;
+            margin-right: 5px;
         }
         #list{
             margin-left: 10%;
@@ -48,15 +49,15 @@
             float: left;
         }
         .item-version{
-            width: 10%;
+            width: 5%;
             float: left;
         }
         .item-date{
-            width: 20%;
+            width: 15%;
             float: left;
         }
         .item-action{
-            width: 10%;
+            width: 20%;
             float: left;
         }
         #item-header{
@@ -80,7 +81,7 @@
             width: 50px;
         }
 
-        .newTable {
+        .newTable,.updateDesc,.newTag {
             display: none;
             position: absolute;
             top: 20%;
@@ -118,10 +119,45 @@
             overflow: auto;
         }
 
+        .showTag {
+            display: none;
+            position: absolute;
+            top: 140px;
+            left: 10%;
+            width: 80%;
+            height: calc(80% - 145px);
+            padding: 20px;
+            border: 1px solid #A6ACAF;
+            background-color: white;
+            z-index: 1003;
+            overflow: auto;
+        }
+        .tag{
+            height: 40px;
+            line-height: 40px;
+        }
+        .tag-name{
+            width: 10%;
+            float: left;
+        }
+        .tag-date{
+            width: 15%;
+            float: left;
+        }
+        .tag-describe{
+            width: 60%;
+            float: left;
+        }
+        .tag-action{
+            width: 10%;
+            float: left;
+        }
+
     </style>
 </head>
 <body>
 <div id="login" class="login">
+    <a href = "javascript:void(0)" style="margin-left: 90%" onclick = "document.getElementById('login').style.display='none';">关闭</a>
     <input id="userName" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="用户名">
     <br><br>
     <input id="password" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="密码">
@@ -130,6 +166,7 @@
 </div>
 
 <div id="register" class="register">
+    <a href = "javascript:void(0)" style="margin-left: 90%" onclick = "document.getElementById('register').style.display='none';">关闭</a>
     <input id="reg_name" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="用户名(尽力使用真实姓名)">
     <br><br>
     <input id="reg_password" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="密码">
@@ -140,12 +177,46 @@
 <div id="tips" class="tips"><span id="tips-msg"></span></div>
 
 <div id="newTable" class="newTable">
+    <a href = "javascript:void(0)" style="margin-left: 90%" onclick = "document.getElementById('newTable').style.display='none';">关闭</a>
     <input id="new_name" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="表名(*必填)">
     <br><br>
     <input id="new_describe" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="描述(选填)">
     <br><br>
     <button onclick="createTable()" >ok</button>
 </div>
+
+<!-------------------------------------- 更新表描述 ------------------------------------------>
+<div id="updateDesc" class="updateDesc">
+    <a href = "javascript:void(0)" style="margin-left: 90%" onclick = "document.getElementById('updateDesc').style.display='none';">关闭</a>
+    <TEXTAREA id="updateDesc-input" type="text" placeholder="描述" style="width:450px;height: 72px;padding: 2px;resize:none;"></TEXTAREA>
+    <br>
+    <input id="updateDesc-name" type="hidden">
+    <button onclick="updateDesc()" >ok</button>
+</div>
+<!-------------------------------------- 更新表描述 ------------------------------------------>
+
+<!-------------------------------------- 新建Tag ------------------------------------------>
+<div id="newTag" class="newTag">
+    <a href = "javascript:void(0)" style="margin-left: 90%" onclick = "document.getElementById('newTag').style.display='none';">关闭</a>
+    <input id="newTag_name" style="width: 400px;height: 30px" type="text" autofocus="true" placeholder="name">
+    <br><br>
+    <button onclick="newTag()" >ok</button>
+</div>
+<!-------------------------------------- 新建Tag ------------------------------------------>
+<!-------------------------------------- 展示Tag ------------------------------------------>
+<div id="showTag" class="showTag">
+    <a href = "javascript:void(0)" style="margin-left: 90%" onclick = "document.getElementById('showTag').style.display='none';">关闭</a>
+
+        <div id="tag-header">
+            <div class="tag-name">名称</div>
+            <div class="tag-date">时间</div>
+            <div class="tag-describe">描述</div>
+            <div class="tag-action">操作</div>
+        </div>
+    <br><hr>
+        <div id="tag-list"></div>
+</div>
+<!-------------------------------------- 展示Tag ------------------------------------------>
 
 <div id="header">
     <div id="user"></div>
@@ -154,7 +225,9 @@
     <div id="menu">
         <div class="nav" ><input type="checkbox" name="checkAll" onclick="changeState(this.checked)" class="checkbox"></div>
         <div class="nav" ><button onclick="downAllSelected()" style="width: 80px">下载已选</button></div>
+        <div class="nav" ><button onclick="document.getElementById('newTag').style.display='block';" style="width: 80px">Tag已选</button></div>
         <div class="nav" ><div style="width: 10px;height:30px;margin-top: 6px;padding-left: 8px"><div style="height: 30px;width:2px;background: #CACFD2"></div></div></div>
+        <div class="nav" ><button style="width: 80px" onclick="showTag()">浏览Tag</button></div>
         <div class="nav" ><button style="width: 80px" onclick="document.getElementById('newTable').style.display='block';">新建表格</button></div>
     </div>
     <div id="list">
@@ -162,7 +235,7 @@
             <div class="item-check">选择</div>
             <div class="item-name">名称</div>
             <div class="item-describe">描述</div>
-            <div class="item-version">当前版本</div>
+            <div class="item-version">版本</div>
             <div class="item-date">时间</div>
             <div class="item-action">操作</div>
         </div>
@@ -176,7 +249,7 @@
         getAllTable();
         let userElem = document.getElementById("user");
         token = util.getCookie("token");
-        if (token != ""){
+        if (token !== ""){
             let uname = util.tokenName(token);
             loginOk(uname)
         }else {
@@ -230,6 +303,7 @@
         util.httpPost(hurl,data,function (res) {
             if(res.ok === 1){
                 showTips("注册成功",2000)
+                token = res.token;
                 util.setCookie("token",res.token,7);
                 document.getElementById('register').style.display='none';
                 loginOk(uname)
@@ -277,6 +351,35 @@
 
     }
 
+    function showUpdateDesc(tableName) {
+        document.getElementById('updateDesc').style.display = "block";
+        document.getElementById('updateDesc-name').value = tableName;
+    }
+
+    function updateDesc() {
+        if (token === ""){
+            showTips("请先登录",2000);
+            return
+        }
+        let describe = document.getElementById("updateDesc-input").value;
+        let tableName = document.getElementById("updateDesc-name").value;
+        if (describe === ""){
+            return;
+        }
+        let url = httpAddr + "/updateDescribe";
+        let data = {tableName:tableName,describe:describe,token:token};
+        util.httpPost(url,data,function (res) {
+            if(res.ok === 1){
+                document.getElementById('updateDesc').style.display = "none";
+                getAllTable()
+            }else{
+                showTips(res.msg,2000)
+            }
+        },function (e){
+            showTips("网络错误",2000)
+        })
+    }
+
     function download(tableName) {
         if (token === ""){
             showTips("请先登录",2000);
@@ -286,10 +389,7 @@
         let data = {tableName:tableName,token:token};
         util.httpPost(url,data,function (res) {
             if(res.ok === 1){
-                let ws =  XLSX.utils.aoa_to_sheet(res.data);
-                let wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-                XLSX.writeFile(wb, util.format("{0}.xlsx",tableName))
+                util.exportExcel(tableName,res.data)
             }else{
                 showTips(res.msg,2000)
             }
@@ -303,8 +403,8 @@
             showTips("请先登录",2000);
             return
         }
-        let req = httpAddr+"/editor.html?tableName="+tableName+"&token="+token;
-        window.location.href = req;
+        let req = httpAddr+"/editor.html?tableName="+tableName;
+        window.open(req,"_blank");
     }
 
     function getAllTable() {
@@ -329,8 +429,9 @@
                 <div class="item-version">{3}</div>
                 <div class="item-date">{4}</div>
                 <div class="item-action">
-                    <button onclick="download('{5}')">下载</button>
-                    <button onclick="openTable('{6}')">编辑</button>
+                    <button onclick="showUpdateDesc('{5}')">描述</button>
+                    <button onclick="download('{6}')">下载</button>
+                    <button onclick="openTable('{7}')">编辑</button>
                 </div>
             </div>
 <hr>`;
@@ -340,9 +441,9 @@
         for(let i = 0;i < items.length;i++) {
             let item = items[i];
             if (item.describe === ""){
-                str += util.format(tmp,item.table_name,item.table_name,"暂无描述",item.version,item.date,item.table_name,item.table_name)
+                str += util.format(tmp,item.table_name,item.table_name,"暂无描述",item.version,item.date,item.table_name,item.table_name,item.table_name)
             }else {
-                str += util.format(tmp,item.table_name,item.table_name,item.describe,item.version,item.date,item.table_name,item.table_name)
+                str += util.format(tmp,item.table_name,item.table_name,item.describe,item.version,item.date,item.table_name,item.table_name,item.table_name)
             }
         }
         list.innerHTML = str ;
@@ -351,7 +452,6 @@
     function changeState(isChecked)
     {
         let chk_list = document.getElementsByName("checkbox");
-        //console.log(isChecked,chk_list);
         for(let i=0;i<chk_list.length;i++){
             chk_list[i].checked=isChecked;
         }
@@ -370,9 +470,97 @@
     function downAllSelected() {
         let selectNames = getSelectedBox();
         for(let i=0;i< selectNames.length;i++){
-            //console.log(selectNames[i]);
             download(selectNames[i])
         }
+    }
+
+    function newTag() {
+        if (token === ""){
+            showTips("请先登录",2000);
+            return
+        }
+
+        let name = document.getElementById("newTag_name").value;
+        if (name === ""){
+            showTips("请输入名称",2000);
+            return;
+        }
+
+        let selectNames = getSelectedBox();
+        if (selectNames.length === 0){
+            showTips("还没有选择",2000);
+            return;
+        }
+        let table = new Array();
+        for(let i=0;i< selectNames.length;i++){
+            table.push(selectNames[i])
+        }
+
+        let url = httpAddr + "/addTag";
+        let data = {tagName:name,tables:table,token:token};
+        util.httpPost(url,data,function (res) {
+            if(res.ok === 1){
+                document.getElementById("newTag").style.display = "none";
+            }else{
+                showTips(res.msg,2000)
+            }
+        },function (e){
+            showTips("网络错误",2000)
+        })
+    }
+
+    function showTag() {
+        let url = httpAddr + "/showTag";
+        let data = {token:token};
+        util.httpPost(url,data,function (res) {
+            if(res.ok === 1){
+                console.log(res);
+                document.getElementById("showTag").style.display = "block";
+                let tmp = `<div class="tag">
+                <div class="tag-name">{0}</div>
+                <div class="tag-date">{1}</div>
+                <div class="tag-describe">{2}</div>
+                <div class="tag-action">
+                    <button onclick="downTag('{3}')">下载</button>
+                </div>
+            </div>
+<hr>`;
+                let list = document.getElementById('tag-list');
+                list.innerHTML = "";
+                let str = "";
+                for(let i = 0;i < res.tags.length;i++) {
+                    let item = res.tags[i];
+                    if (item.describe === ""){
+                        str += util.format(tmp,item.tag_name,item.date,"暂无描述",item.tag_name)
+                    }else {
+                        str += util.format(tmp,item.tag_name,item.date,item.describe,item.tag_name)
+                    }
+                }
+                list.innerHTML = str ;
+            }else{
+                showTips(res.msg,2000)
+            }
+        },function (e){
+            showTips("网络错误",2000)
+        })
+    }
+
+    function downTag(tagName) {
+        let url = httpAddr + "/downTag";
+        let data = {tagName:tagName,token:token};
+        util.httpPost(url,data,function (res) {
+            if(res.ok === 1){
+                console.log(res);
+                $.each(res.tables,function (name,item) {
+                    console.log(name,item);
+                    util.exportExcel(name,item)
+                });
+            }else{
+                showTips(res.msg,2000)
+            }
+        },function (e){
+            showTips("网络错误",2000)
+        })
     }
 
 </script>

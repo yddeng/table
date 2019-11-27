@@ -58,3 +58,50 @@ WHERE version=%d;`
 	err = json.Unmarshal(([]byte)(cmdStr), &cmds)
 	return users, dateStr, cmds, nil
 }
+
+// 给tag表添加一列
+func AlterAddTagData(tableName string) error {
+	sqlStr := `
+ALTER TABLE "public"."tag_data" 
+  ADD COLUMN "%s" varchar(65525);`
+	sqlStatement := fmt.Sprintf(sqlStr, tableName)
+	smt, err := dbConn.Prepare(sqlStatement)
+	if err != nil {
+		return err
+	}
+	_, err = smt.Exec()
+	return err
+}
+
+func GetTag(tagName string) (ret map[string]interface{}, err error) {
+	sqlStr := `
+SELECT * FROM "tag_data" 
+WHERE tag_name = '%s';`
+
+	sqlStatement := fmt.Sprintf(sqlStr, tagName)
+	rows, err := dbConn.Query(sqlStatement)
+	if err != nil {
+		return nil, err
+	}
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	mid := []interface{}{}
+	for i := 0; i < len(columns); i++ {
+		mid = append(mid, new(interface{}))
+	}
+
+	ret = map[string]interface{}{}
+	err = dbConn.QueryRow(sqlStatement).Scan(mid...)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, c := range columns {
+		ret[c] = *(mid[i].(*interface{}))
+	}
+
+	return ret, nil
+}
