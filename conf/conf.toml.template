@@ -1,0 +1,10 @@
+WSAddr         = "10.128.2.123:4546"     # websocket地址
+HttpAddr       = "10.128.2.123:4545"     # 服务器地址
+LoadDir        = "./app"              # 加载目录
+
+[DBConfig]
+DbHost          = "127.0.0.1"
+DbPort          = 5432
+DbUser			= "dbuser"
+DbPassword      = "123456"
+DbDataBase      = "excel"
