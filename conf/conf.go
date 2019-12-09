@@ -6,6 +6,15 @@ type Config struct {
 	WSAddr   string
 	HttpAddr string
 	LoadDir  string
+	DBConfig *DBConfig
+}
+
+type DBConfig struct {
+	DbHost     string
+	DbPort     int
+	DbUser     string
+	DbPassword string
+	DbDataBase string
 }
 
 var config *Config

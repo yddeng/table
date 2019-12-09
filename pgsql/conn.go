@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"github.com/yddeng/table/conf"
 	"time"
 )
 
@@ -18,7 +19,9 @@ const (
 var dbConn *sql.DB
 
 func sqlOpen() error {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	_conf := conf.GetConfig().DBConfig
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		_conf.DbHost, _conf.DbPort, _conf.DbUser, _conf.DbPassword, _conf.DbDataBase)
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		return err
@@ -37,7 +40,7 @@ func GenDateTimeString(date time.Time) string {
 		date.Year(), int(date.Month()), date.Day(), date.Hour(), date.Minute(), date.Second())
 }
 
-func init() {
+func Init() {
 	err := sqlOpen()
 	if err != nil {
 		panic(err)

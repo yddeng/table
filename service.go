@@ -6,13 +6,14 @@ import (
 	"github.com/sniperHW/kendynet"
 	listener "github.com/sniperHW/kendynet/socket/listener/websocket"
 	"github.com/yddeng/table/conf"
+	"github.com/yddeng/table/pgsql"
 	"net/http"
 )
 
 func Start(path string) {
 	conf.LoadConfig(path)
 	_conf := conf.GetConfig()
-
+	pgsql.Init()
 	InitLogger()
 	go Loop()
 
